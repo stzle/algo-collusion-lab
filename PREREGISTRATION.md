@@ -89,3 +89,58 @@ follow-up, not part of the original design, the σᵤ = 100 cells are rerun at a
 8 × 10⁸ cap with the same seeds. The R2 verdict above stays "fail" whatever this shows;
 the follow-up only tells whether the learning bias levels off, and is reported as an
 exploratory check.
+
+---
+
+# Pre-registration 2: precision sweep
+
+Written on 20 October 2026, **before** any of these runs. Applied automatically by
+`scripts/08_precision_sweep.py`.
+
+## Question
+
+The first results use two noise levels for speculator 2 (q = 0.5, 1.0) while
+speculator 1 sees the value exactly. The research question is about *continuous*
+differences in precision. Two things are open:
+
+1. **Shape.** Does the collusive part fade gradually as the precision gap grows, or is it
+   already gone at a tiny gap? At q = 0.1 the Nash strategies of the two speculators differ
+   by less than 1 %, but the cartel benchmark jumps to a corner where only the informed
+   speculator trades. So a collapse at q = 0.1 would point to the changed incentives of
+   joint profit maximisation rather than to the information gap itself.
+2. **Corner.** Does fragility need one perfectly informed speculator? With noise
+   (0.25, 0.75) both speculators trade in the cartel benchmark.
+
+## Design
+
+Equal grid ±30 %, variant A, cap 2 × 10⁸, 20 runs (seeds 1–20), σᵤ ∈ {0.1, 100}.
+
+| Profile (q₁, q₂) | Cells | Role |
+|---|---|---|
+| (0, 0) | pair, one learner alone | reference for P1 |
+| (0, q), q ∈ {0.1, 0.25, 0.5, 1, 2} | pair, each speculator alone against the other fixed at Nash | P1 |
+| (0.5, 0.5) | pair, one learner alone | reference for P2 (same average noise) |
+| (0.25, 0.75) | pair, each speculator alone | P2 |
+
+Measures as in pre-registration 1. For an unequal profile, ρ = the larger of the two
+speculators' collusive parts divided by the collusive part of its reference profile.
+
+## Decision rules
+
+A reference is *informative* if its collusive part is ≥ 0.03 and > 2 SE; otherwise the rule
+reports "uninformative".
+
+**P1 — shape** (per σᵤ, reference (0, 0)):
+- *Collapse*: ρ(0.1) ≤ 0.5.
+- *Gradual*: ρ(0.1) > 0.5 and ρ(q) ≤ 0.5 for q = 1 and q = 2.
+- *Mixed*: anything else (reported with the full curve).
+Overall: the common verdict if both σᵤ agree, otherwise "depends on noise trading".
+
+**P2 — no perfectly informed speculator needed** (per σᵤ, reference (0.5, 0.5)):
+*Holds* if ρ(0.25, 0.75) ≤ 0.5. Overall: holds if it holds at every informative σᵤ.
+
+**Descriptive, no rule:** the learning bias of the worse-informed speculator across q.
+
+## Amendments
+
+None yet.
