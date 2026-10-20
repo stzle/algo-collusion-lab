@@ -81,4 +81,11 @@ speculators, and the impulse-response analysis.
 
 ## Amendments
 
-None yet.
+**20 October 2026 — added after seeing the results.** The planned runs finished on
+19 October (`reference_results/robustness`). R2 failed at σᵤ = 100: between the
+2 × 10⁸ and 4 × 10⁸ caps the collusive part moved by at most 0.003, but the restraint of
+the worse-informed speculator against a fixed opponent moved by up to 0.030. As a
+follow-up, not part of the original design, the σᵤ = 100 cells are rerun at an
+8 × 10⁸ cap with the same seeds. The R2 verdict above stays "fail" whatever this shows;
+the follow-up only tells whether the learning bias levels off, and is reported as an
+exploratory check.
