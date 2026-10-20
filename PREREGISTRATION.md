@@ -144,3 +144,62 @@ Overall: the common verdict if both σᵤ agree, otherwise "depends on noise tra
 ## Amendments
 
 None yet.
+
+---
+
+# Pre-registration 3: noise versus inequality
+
+Written on 20 October 2026, after the precision sweep and **before** any of these runs.
+Applied automatically by `scripts/09_noise_vs_inequality.py`.
+
+## Why
+
+In the precision sweep, symmetric noise (0.5, 0.5) already reduced the collusive part
+from 10.2 % to 2.4 % (σᵤ = 0.1) and from 7.2 % to 3.0 % (σᵤ = 100). So the drop under
+unequal precision could come from noise as such rather than from inequality. This run
+separates the two by comparing profiles with the same **average noise** m (mean of the
+two speculators' noise standard deviations), with and without inequality.
+
+Matching on the mean noise standard deviation is a choice; other matches (e.g. on price
+informativeness) are possible and are discussed, not tested, here.
+
+## Design
+
+Equal grid ±30 %, variant A, cap 2 × 10⁸, 20 runs, σᵤ ∈ {0.1, 100}. Points already run
+in the precision sweep are reused (same seeds and code give identical results).
+
+| m | equal (m, m) | unequal, one exact (0, 2m) | unequal, both noisy (m/2, 3m/2) |
+|---:|---|---|---|
+| 0.05 | new | (0, 0.1) from sweep | – |
+| 0.125 | new | (0, 0.25) from sweep | – |
+| 0.25 | new | (0, 0.5) from sweep | (0.125, 0.375) new |
+| 0.5 | from sweep | (0, 1) from sweep | (0.25, 0.75) from sweep |
+| 1.0 | new | (0, 2) from sweep | (0.5, 1.5) new |
+
+Equal profiles: pair and one learner alone; unequal: pair and each speculator alone.
+
+## Measures
+
+c(·) as before; for an unequal profile, c is the **mean** of the two speculators'
+collusive parts. With c₀ the collusive part at (0, 0):
+- noise effect N(m) = c₀ − c(m, m)
+- inequality effect E(m) = c(m, m) − c(unequal profile with mean m)
+- inequality share s(m) = E / (N + E), only when N + E ≥ 0.02.
+
+## Decision rules (one-exact family; the both-noisy family is reported with the same rules as a secondary check)
+
+**I1 — inequality has an effect of its own** (one-exact family, 5 values of m). At a given σᵤ, E(m) is *detected* at m if
+E(m) ≥ 0.01 and E(m) > 2 SE.
+- *Yes*: detected at ≥ 3 of the 5 m values at both σᵤ.
+- *No*: detected at ≤ 1 m value at both σᵤ — the drop is explained by noise.
+- *Partial*: anything else.
+
+For the both-noisy family (3 values of m): *yes* at ≥ 2, *no* at 0, at both σᵤ.
+
+**I2 — which effect is larger.** Over the m values where s is defined:
+*mainly noise* if s < 0.5 at every one, *mainly inequality* if s > 0.5 at every one,
+otherwise *mixed*. Per σᵤ; overall the common verdict or "depends on noise trading".
+
+## Amendments
+
+None yet.
