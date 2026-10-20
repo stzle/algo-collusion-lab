@@ -6,7 +6,7 @@ Rules: PREREGISTRATION.md. c = collusive part, b = learning bias, both in % of t
 - **S1 (bias of the worse-informed speculator):** holds
 - **H3 proxy:** supported
 - **R2 (caps), σᵤ = 0.1:** pass  — 1e+08->2e+08: max move 0.036 over 3 capped cells, R1 same: True; 2e+08->4e+08: max move 0.008 over 1 capped cells, R1 same: True
-- **R2 (caps), σᵤ = 100.0:** fail  — 1e+08->2e+08: max move 0.050 over 7 capped cells, R1 same: True; 2e+08->4e+08: max move 0.030 over 7 capped cells, R1 same: True
+- **R2 (caps), σᵤ = 100.0:** fail  — 1e+08->2e+08: max move 0.050 over 7 capped cells, R1 same: True; 2e+08->4e+08: max move 0.030 over 7 capped cells, R1 same: True; 4e+08->8e+08: max move 0.018 over 4 capped cells, R1 same: True
 - **A vs B:** difference in 0 of 10 cases
 
 | σᵤ | width | monitor | cap | case | c | ± | b | ± | conv | R1 |
@@ -61,6 +61,11 @@ Rules: PREREGISTRATION.md. c = collusive part, b = learning bias, both in % of t
 | 100 | 0.3 | realized | 4e+08 | noisy_q0.5 | +0.5 | 0.3 | +8.0 | 0.2 | 0% |  |
 | 100 | 0.3 | realized | 4e+08 | informed_q1 | +1.4 | 0.2 | +3.5 | 0.1 | 0% |  |
 | 100 | 0.3 | realized | 4e+08 | noisy_q1 | +0.5 | 0.3 | +14.6 | 0.2 | 0% |  |
+| 100 | 0.3 | realized | 8e+08 | sym | +7.2 | 0.2 | +3.6 | 0.1 | 60% | holds |
+| 100 | 0.3 | realized | 8e+08 | informed_q0.5 | +0.6 | 0.2 | +4.1 | 0.1 | 0% |  |
+| 100 | 0.3 | realized | 8e+08 | noisy_q0.5 | +0.6 | 0.3 | +9.1 | 0.2 | 0% |  |
+| 100 | 0.3 | realized | 8e+08 | informed_q1 | +1.6 | 0.2 | +3.5 | 0.1 | 0% |  |
+| 100 | 0.3 | realized | 8e+08 | noisy_q1 | +0.3 | 0.2 | +16.5 | 0.1 | 0% |  |
 | 100 | 0.4 | realized | 2e+08 | sym | +7.6 | 0.3 | +3.5 | 0.2 | 0% | holds |
 | 100 | 0.4 | realized | 2e+08 | informed_q0.5 | +1.3 | 0.3 | +4.5 | 0.2 | 0% |  |
 | 100 | 0.4 | realized | 2e+08 | noisy_q0.5 | +0.9 | 0.3 | +8.5 | 0.1 | 0% |  |
