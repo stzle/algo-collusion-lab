@@ -19,11 +19,12 @@ def test_matched_profiles_have_equal_mean_noise():
 
 
 def test_plan_reuses_sweep_points():
-    recs = json.loads((ROOT / "reference_results" / "precision" / "points.json").read_text())["points"]
-    done = {N.S.key(r) for r in recs}
+    sweep = {N.S.key(p) for p in N.S.plan([0.1, 100.0])}
     plan = N.plan([0.1, 100.0])
     assert len(plan) == 72
-    assert len([p for p in plan if N.S.key(p) not in done]) == 28
+    assert len([p for p in plan if N.S.key(p) not in sweep]) == 28
+    recs = json.loads((ROOT / "reference_results" / "precision" / "points.json").read_text())["points"]
+    assert {N.S.key(p) for p in plan} <= {N.S.key(r) for r in recs}
 
 
 def test_i1_and_i2():
