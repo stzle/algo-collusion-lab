@@ -394,7 +394,8 @@ def run_sessions(seeds, v_grid, edges, sig_eps, chi_grid, p0, dp, n_p, Q0,
 # --------------------------------------------------------------------------
 @njit(cache=True)
 def _greedy_path(Q, v_grid, chi_grid, p0, dp, n_p, v_bar, p_int, p_slope, monitor,
-                 s_start, vseq, sigseq, useq, shock, shock_at, chi_out, ptil_out):
+                 s_start, vseq, sigseq, useq, shock, shock_at, chi_out, ptil_out,
+                 fixed_mask, fixed_chi):
     I = Q.shape[0]
     n_v = v_grid.shape[0]
     s = s_start.copy()
@@ -403,9 +404,12 @@ def _greedy_path(Q, v_grid, chi_grid, p0, dp, n_p, v_bar, p_int, p_slope, monito
         v_idx = vseq[h]
         X = 0.0
         for i in range(I):
-            a = _argmax(Q[i, s[i]])
-            chi_out[h, i] = chi_grid[i, a]
-            X += chi_grid[i, a] * (v_grid[sigseq[h, i]] - v_bar)
+            if fixed_mask[i]:
+                c = fixed_chi[i]            # control: plays its fixed strategy
+            else:
+                c = chi_grid[i, _argmax(Q[i, s[i]])]
+            chi_out[h, i] = c
+            X += c * (v_grid[sigseq[h, i]] - v_bar)
         u = useq[h]
         sgn = 1.0 if v_grid[v_idx] >= v_bar else -1.0
         if h == shock_at:
@@ -422,7 +426,7 @@ def _greedy_path(Q, v_grid, chi_grid, p0, dp, n_p, v_bar, p_int, p_slope, monito
 @njit(cache=True)
 def impulse_response(seed, Q, v_grid, edges, sig_eps, chi_grid, p0, dp, n_p, v_bar,
                      sigma_u, p_int, p_slope, monitor, s_start, v_start, sig_start,
-                     shocks, n_paths, burn, horizon, shock_at):
+                     shocks, n_paths, burn, horizon, shock_at, fixed_mask, fixed_chi):
     """Average effect of a one-off adverse noise-trade shock at period `shock_at`
     on aggressiveness and prices, measured against the same path without the
     shock (identical draws of v, signals and u). Learning is off; the market
@@ -455,7 +459,7 @@ def impulse_response(seed, Q, v_grid, edges, sig_eps, chi_grid, p0, dp, n_p, v_b
                 sigseq[1, i] = _draw_signal(vseq[1], v_grid, edges, sig_eps[i])
             useq[0] = sigma_u * np.random.standard_normal()
             s = _greedy_path(Q, v_grid, chi_grid, p0, dp, n_p, v_bar, p_int, p_slope, monitor,
-                             s, vseq[:2], sigseq[:2], useq[:1], 0.0, -1, chi_b, pt_b)
+                             s, vseq[:2], sigseq[:2], useq[:1], 0.0, -1, chi_b, pt_b, fixed_mask, fixed_chi)
             v_idx = vseq[1]
             for i in range(I):
                 sig[i] = sigseq[1, i]
@@ -470,14 +474,14 @@ def impulse_response(seed, Q, v_grid, edges, sig_eps, chi_grid, p0, dp, n_p, v_b
         for h in range(horizon):
             useq[h] = sigma_u * np.random.standard_normal()
         s_end = _greedy_path(Q, v_grid, chi_grid, p0, dp, n_p, v_bar, p_int, p_slope, monitor,
-                             s, vseq, sigseq, useq, 0.0, -1, chi_b, pt_b)
+                             s, vseq, sigseq, useq, 0.0, -1, chi_b, pt_b, fixed_mask, fixed_chi)
         for h in range(horizon):
             base_ptil[h] += pt_b[h]
             for i in range(I):
                 base_chi[h, i] += chi_b[h, i]
         for k in range(K):
             _greedy_path(Q, v_grid, chi_grid, p0, dp, n_p, v_bar, p_int, p_slope, monitor,
-                         s, vseq, sigseq, useq, shocks[k], shock_at, chi_s, pt_s)
+                         s, vseq, sigseq, useq, shocks[k], shock_at, chi_s, pt_s, fixed_mask, fixed_chi)
             for h in range(horizon):
                 dptil[k, h] += pt_s[h] - pt_b[h]
                 for i in range(I):
@@ -588,9 +592,9 @@ def profit_gain(profit: np.ndarray, bm: dict) -> dict:
 def session_irf(res: dict, k: int, prm: DGJParams, shock_fracs=(0.0025, 0.025, 0.115, 0.15),
                 n_paths=2000, burn=20, horizon=9, shock_at=2, seed=None) -> dict:
     """Impulse response for session k. Shock sizes are fractions of the
-    speculators' average absolute order, as in DGJ Figure 3."""
-    if any(f is not None for f in prm.fixed):
-        raise NotImplementedError("impulse responses are only defined when all speculators learn")
+    speculators' average absolute order, as in DGJ Figure 3. A fixed speculator
+    (prm.fixed) keeps its fixed strategy, so a lone learner's response can serve
+    as a control for responses that need no coordination."""
     env = res["env"]
     p_grid = env["p_grid"]
     d_abs = np.mean(np.abs(env["v_grid"] - prm.v_bar))
@@ -602,6 +606,6 @@ def session_irf(res: dict, k: int, prm: DGJParams, shock_fracs=(0.0025, 0.025, 0
         env["sig_eps"], env["chi_grid"], p_grid[0], p_grid[1] - p_grid[0], len(p_grid),
         prm.v_bar, prm.sigma_u, p_int, p_slope, MONITOR[prm.monitor],
         res["s_final"][k].copy(), int(res["v_final"][k]), res["sig_final"][k].copy(),
-        shocks, n_paths, burn, horizon, shock_at)
+        shocks, n_paths, burn, horizon, shock_at, env["fixed_mask"], env["fixed_chi"])
     return {"dchi": dchi, "dptil": dptil, "base_chi": bchi, "base_ptil": bptil,
             "shocks": shocks, "shock_fracs": np.array(shock_fracs)}

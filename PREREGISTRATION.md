@@ -203,3 +203,62 @@ otherwise *mixed*. Per σᵤ; overall the common verdict or "depends on noise tr
 ## Amendments
 
 None yet.
+
+---
+
+# Pre-registration 4: shock test (punishment)
+
+Written on 31 October 2026, **before** any of these runs. Applied automatically by
+`scripts/10_shock_test.py`.
+
+## Why
+
+The restraint decomposition shows *that* speculators hold back together, not *how*.
+Collusion sustained by punishment shows up as a reaction to a deviation: after a large
+adverse price shock, colluding speculators trade more aggressively for a period
+(Dou, Goldstein & Ji 2025, Section 5.3). This run tests for that reaction, and uses a
+control that the original test lacks: the same shock applied to a speculator that learned
+**alone** against a fixed Nash opponent. A lone learner can also react to a price shock,
+simply because its strategy depends on the price; only the part of the reaction beyond
+that control requires another learner.
+
+It also addresses the open question from the noise-versus-inequality run: is the
+collusive part that remains at equal noise m = 1 (about 2.5 % after removing the part
+explained by independent learning biases) sustained by punishment?
+
+## Design
+
+Equal grid ±30 %, variant A, cap 2 × 10⁸, 20 runs (seeds 1–20), σᵤ ∈ {0.1, 100}.
+Profiles (q₁, q₂): (0, 0), (0, 0.25), (0, 1), (0.5, 0.5), (1, 1); for each the pair and the
+lone-learner controls as in pre-registration 2. After learning, learning is switched off and
+a one-off adverse noise-trade shock hits at t = 3, with DGJ's sizes 0.25 %, 2.5 %, 11.5 %,
+15 % of the average absolute order; 5,000 paired paths per run (common random numbers).
+
+## Measures
+
+R = change in a speculator's aggressiveness at t = 4 (the period after the shock), in % of
+its average aggressiveness, averaged over runs. Punishment response P = R(pair) − R(alone),
+SE from the two independent sets of runs.
+
+## Decision rules
+
+A speculator **punishes** if P > 2 SE and P ≥ 0.5 % at both the 11.5 % and the 15 % shock.
+The reaction is reported as **trigger-like** if in addition P at the 0.25 % shock is below a
+quarter of P at the 11.5 % shock. A profile shows punishment if at least one speculator
+punishes.
+
+- **T1 — the test works.** (0, 0) at σᵤ = 0.1 shows punishment. If not, T2–T4 are reported as
+  *inconclusive*: the test cannot detect punishment in this setting.
+- **T2 — the rebound at m = 1.** (1, 1) at σᵤ = 0.1: punishment → *punishment-based*;
+  none → *not punishment-based*.
+- **T3 — inequality.** (0, 1) at σᵤ = 0.1: no speculator punishes → *inequality removes
+  punishment*; otherwise *punishment survives* (naming the speculator).
+- **T4 — H3, main test.** *Supported* if T1 holds, T3 = removes punishment, and S1 (the
+  learning bias of the worse-informed speculator) held in the robustness run.
+
+Descriptive, no rule: (0, 0.25), (0.5, 0.5), and every profile at σᵤ = 100, where DGJ find
+no price-trigger strategies.
+
+## Amendments
+
+None yet.

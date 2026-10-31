@@ -72,7 +72,7 @@ python scripts/00_check_setup.py
 pytest -q
 ```
 
-`pytest` should report 52 passed.
+`pytest` should report 58 passed.
 
 `00_check_setup.py` warns if Python runs as x86_64 (about 2× slower), compiles the
 code once (cached afterwards, so later runs start immediately), prints your
@@ -98,6 +98,7 @@ learning path on Apple Silicon and on the x86 test machine (checked on an M4:
 | `07_robustness.py` | Robustness of the first results: grid widths, variant B, longer learning; applies the rules in `PREREGISTRATION.md` | 92 points × 20 sessions (~2.5 h) |
 | `08_precision_sweep.py` | Collusive part across the precision gap, incl. a both-noisy profile; rules in `PREREGISTRATION.md` (part 2) | 44 points × 20 sessions (~1 h) |
 | `09_noise_vs_inequality.py` | Separates the effect of noise from that of inequality at equal average noise; rules in `PREREGISTRATION.md` (part 3); reuses the sweep's points | 28 new points × 20 sessions (~30 min) |
+| `10_shock_test.py` | Punishment test: reaction to a price shock in the pair minus that of a lone learner; rules in `PREREGISTRATION.md` (part 4) | 24 runs × 20 sessions (~45 min) |
 
 A small version of everything, to check that it all works:
 
