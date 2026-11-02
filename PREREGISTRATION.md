@@ -262,3 +262,49 @@ no price-trigger strategies.
 ## Amendments
 
 None yet.
+
+---
+
+# Pre-registration 5: final checks
+
+Written on 1 November 2026, **before** any of these runs. Applied automatically by
+`scripts/11_final_checks.py`. After this run no further experiments are planned for the
+final report; everything else is listed as a limitation.
+
+## Part M — market quality (descriptive, no rule)
+
+The Exposé names price informativeness, liquidity (price impact) and individual profits as
+outcome measures; they were not saved in the earlier runs. The pair runs of all 14
+precision profiles of pre-registrations 2 and 3 are repeated (same seeds and code, so
+restraint is identical) and these are saved: price informativeness var(Σx)/var(u),
+realised price impact λ̂ of the market maker, mispricing, profit and aggressiveness per
+speculator, Δ, and the Nash and cartel benchmarks of each profile. Reported as curves over
+the precision profiles, compared with the Nash and cartel benchmarks. No hypothesis is
+tested.
+
+## Part P — does inequality specifically break punishment?
+
+The shock test found punishment by both speculators at (0, 0), by the exactly informed one
+only at (0, 0.25), and none at (0.5, 0.5), (1, 1) and (0, 1). Missing is equal noise at
+the same average as (0, 0.25): profile (0.125, 0.125), σᵤ = 0.1, pair and lone learner,
+same shock test and the same punishment rule as pre-registration 4.
+
+- **P5**: both speculators punish → *inequality specifically weakens punishment* (at the
+  same average noise, equal noise keeps it two-sided); no speculator punishes → *noise
+  alone already removes punishment at this level*; one → *mixed*.
+
+## Part G — finer value grid
+
+All runs so far use 6 value levels (Dou, Goldstein & Ji: 10). Repeated with n_v = 10 for
+profiles (0, 0), (0, 0.5), (0, 1), (0.5, 0.5) at σᵤ ∈ {0.1, 100}, pair and lone-learner
+controls, otherwise as pre-registration 2.
+
+- **G1 — main result**: at each σᵤ, the symmetric collusive part at (0, 0) is informative
+  (≥ 0.03, > 2 SE) and the larger collusive part at (0, 0.5) and at (0, 1) is at most half
+  of it. *Holds* at both σᵤ / *fails* at any informative σᵤ / *uninformative*.
+- **G2 — noise effect**: the collusive part at (0.5, 0.5) is at most half of that at (0, 0).
+  Same verdicts.
+
+## Amendments
+
+None yet.
