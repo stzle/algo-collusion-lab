@@ -308,3 +308,65 @@ controls, otherwise as pre-registration 2.
 ## Amendments
 
 None yet.
+
+---
+
+# Pre-registration 6: three checks of weak points
+
+Written on 10 November 2026, **before** any of these runs. Applied automatically by
+`scripts/12_hygiene_checks.py`. These runs test weak points of the existing results;
+they do not add a new research question.
+
+## Part S — is the correction for independent learning biases right?
+
+The exploratory "phantom" correction (data/COLUMNS.md) assumes that a speculator keeps the
+same aggressiveness when the other one trades less. It then subtracts the restraint that
+two such speculators would show without coordinating. This assumption is replaced by a
+measurement: speculator *i* learns against an opponent **fixed at the level the opponent
+reached when it learned alone** (its lone-learner restraint × its Nash strategy, taken
+from `reference_results/precision`). The measured collusive part is then
+
+  c_clean = restraint of *i* in that run − restraint of *i* in the pair.
+
+Profiles (0, 0), (0.25, 0.25), (0.5, 0.5), (1, 1), (0, 0.25), (0, 1); σᵤ ∈ {0.1, 100};
+equal grid ±30 %, variant A, cap 2 × 10⁸, 20 runs. Pair values from `reference_results/precision`.
+
+- **S1 — which estimate was closer?** Over the speculator-cases where measured and corrected
+  collusive part differ by at least 0.01: *correction supported* if c_clean is closer to the
+  corrected value in at least two thirds, *correction rejected* if closer to the measured
+  value in at least two thirds, otherwise *mixed*. From here on c_clean is the estimate
+  used where it exists.
+- **S2 — main result with c_clean.** At each σᵤ: c_clean at (0, 0) is ≥ 0.03 and the larger
+  c_clean at (0, 1) is at most half of it. *Holds* at both σᵤ / *fails*.
+- **S3 — rebound at (1, 1).** *Real* if c_clean ≥ 0.02 and > 2 SE at both σᵤ, *gone* if
+  below 0.02 at both, otherwise *unclear*.
+
+## Part H — learning rate and exploration
+
+All runs so far use α = 0.01 and β = 5 × 10⁻⁷, taken from Dou, Goldstein & Ji before any
+run with unequal information; they were never tuned. Here each is halved and doubled, one
+at a time (4 settings), for profiles (0, 0), (0, 1), (0.5, 0.5) at σᵤ = 0.1, pair and
+lone-learner controls, otherwise as pre-registration 2.
+
+- **H1 — main result.** A setting is *informative* if the collusive part at (0, 0) is
+  ≥ 0.03 and > 2 SE. *Robust* if in every informative setting the larger collusive part at
+  (0, 1) is at most half of that at (0, 0), with at least 3 informative settings;
+  *fails* if it fails in any informative setting; otherwise *insufficient*.
+- **H2 — noise effect** (descriptive): the same ratio for (0.5, 0.5).
+
+## Part B — baseline at the paper's grid sizes
+
+The symmetric baseline at laptop scale gives Δ = 0.38 (paper's action grid) to 0.54 (equal
+grid); Dou, Goldstein & Ji show about 0.75 for σᵤ = 0.1 (read from their figure, see
+TECHNICAL.md 8.2). This run uses their discretisation (10 value levels, 15 actions, 31
+price bins, their action grid), their convergence rule (strategies unchanged for 10⁶
+periods) and a cap of 2 × 10⁹ periods; σᵤ = 0.1, exact equal information, 50 runs for the
+pair and 20 for a lone learner.
+
+- **B1.** *Reproduced* if mean Δ ≥ 0.65; *partly* if 0.50 ≤ Δ < 0.65; *not reproduced*
+  below 0.50. Whatever the outcome, the collusive part and the share of converged runs at
+  this scale are reported.
+
+## Amendments
+
+None yet.
