@@ -50,6 +50,11 @@ class DGJParams:
     # by iota) or "nash" ((1 - grid_width) .. (1 + grid_width) x own Nash chi, same for all)
     grid: str = "benchmarks"
     grid_width: float = 0.3
+    # price grid in the state: "global" (one grid for all prices) or "per_value" (one grid
+    # per lagged value: the prices that the speculators' order grids can produce for that
+    # value, so one step in one speculator's order moves the price by about one grid point,
+    # as DGJ's footnote 16 requires with n_p = 2 n_x)
+    price_grid: str = "global"
     # discretisation (DGJ: n_v = 10, n_x = 15, n_p = 31, iota = 0.1)
     n_v: int = 6
     n_x: int = 13
@@ -113,6 +118,27 @@ def setup(prm: DGJParams) -> dict:
     pL = prm.v_bar + lamN * (np.sum(chi_max) * d.min() - 1.96 * prm.sigma_u)
     span = pH - pL
     p_grid = np.linspace(pL - prm.iota * span, pH + prm.iota * span, prm.n_p)
+    if prm.price_grid == "global":
+        p0 = np.full(prm.n_v, p_grid[0])
+        dp = np.full(prm.n_v, p_grid[1] - p_grid[0])
+    elif prm.price_grid == "per_value":
+        # DGJ Section 4.2 read per value: p_H = v_bar + lam^N (I max(x^M, x^N) + 1.96 sigma_u),
+        # p_L = v_bar + lam^N (I min(x^M, x^N) - 1.96 sigma_u), with x^M, x^N the orders at
+        # that value; then extended by iota. For the Nash-centred action grid the two ends
+        # of each speculator's action grid take the place of x^M and x^N.
+        ends = np.stack([chi_grid.min(axis=1), chi_grid.max(axis=1)]) if prm.grid == "nash" \
+            else np.stack([np.minimum(chiN, chiM), np.maximum(chiN, chiM)])
+        p0 = np.empty(prm.n_v)
+        dp = np.empty(prm.n_v)
+        for k in range(prm.n_v):
+            hi = np.sum(np.maximum(ends[0] * d[k], ends[1] * d[k]))
+            lo = np.sum(np.minimum(ends[0] * d[k], ends[1] * d[k]))
+            pHk = prm.v_bar + lamN * (hi + 1.96 * prm.sigma_u)
+            pLk = prm.v_bar + lamN * (lo - 1.96 * prm.sigma_u)
+            g = np.linspace(pLk - prm.iota * (pHk - pLk), pHk + prm.iota * (pHk - pLk), prm.n_p)
+            p0[k], dp[k] = g[0], g[1] - g[0]
+    else:
+        raise ValueError("price_grid must be 'global' or 'per_value'")
 
     # initial Q (DGJ Section 4.2): discounted profit if the others pick uniformly
     # from the grid and noise trading is zero; identical across p and m states
@@ -129,7 +155,7 @@ def setup(prm: DGJParams) -> dict:
             Q0[i, s] = val[s % prm.n_v]
 
     return {"v_grid": v_grid, "edges": edges, "bm": bm, "chi_grid": chi_grid,
-            "p_grid": p_grid, "Q0": Q0, "lam0": lamN,
+            "p_grid": p_grid, "p0": p0, "dp": dp, "Q0": Q0, "lam0": lamN,
             "sig_eps": np.asarray(prm.sigma_eps, dtype=float),
             "fixed_mask": fixed_mask, "fixed_chi": fixed_chi}
 
@@ -270,12 +296,12 @@ def run_session(seed, v_grid, edges, sig_eps, chi_grid, p0, dp, n_p, Q0,
         v_next = np.random.randint(n_v)
         for i in range(I):
             sig_next[i] = _draw_signal(v_next, v_grid, edges, sig_eps[i])
-        pb = _price_bin(p, p0, dp, n_p)
 
         changed = False
         for i in range(I):
             pi = (v - p) * x[i]
             m_i = v_idx if monitor == 0 else sig[i]
+            pb = _price_bin(p, p0[m_i], dp[m_i], n_p)
             sn = (pb * n_v + m_i) * n_v + sig_next[i]
             if learning:
                 if not fixed_mask[i]:
@@ -416,9 +442,9 @@ def _greedy_path(Q, v_grid, chi_grid, p0, dp, n_p, v_bar, p_int, p_slope, monito
             u += shock * sgn            # adverse: pushes the price towards v
         p = v_bar + p_int + p_slope * (X + u)
         ptil_out[h] = (p - v_bar) * sgn
-        pb = _price_bin(p, p0, dp, n_p)
         for i in range(I):
             m_i = v_idx if monitor == 0 else sigseq[h, i]
+            pb = _price_bin(p, p0[m_i], dp[m_i], n_p)
             s[i] = (pb * n_v + m_i) * n_v + sigseq[h + 1, i]
     return s
 
@@ -557,7 +583,7 @@ def simulate(prm: DGJParams, seeds, env: dict | None = None) -> dict:
     env = env or setup(prm)
     p_grid = env["p_grid"]
     out = run_sessions(np.asarray(seeds, dtype=np.int64), env["v_grid"], env["edges"],
-                       env["sig_eps"], env["chi_grid"], p_grid[0], p_grid[1] - p_grid[0],
+                       env["sig_eps"], env["chi_grid"], env["p0"], env["dp"],
                        len(p_grid), env["Q0"], prm.v_bar, prm.xi, prm.theta, prm.sigma_u,
                        prm.rho, prm.alpha, prm.beta, prm.Tm, env["lam0"],
                        MONITOR[prm.monitor], prm.conv_window, prm.max_periods,
@@ -603,7 +629,7 @@ def session_irf(res: dict, k: int, prm: DGJParams, shock_fracs=(0.0025, 0.025, 0
     p_int, p_slope = res["mm"][k]
     dchi, dptil, bchi, bptil = impulse_response(
         int(seed if seed is not None else 10_000 + k), res["Q"][k], env["v_grid"], env["edges"],
-        env["sig_eps"], env["chi_grid"], p_grid[0], p_grid[1] - p_grid[0], len(p_grid),
+        env["sig_eps"], env["chi_grid"], env["p0"], env["dp"], len(p_grid),
         prm.v_bar, prm.sigma_u, p_int, p_slope, MONITOR[prm.monitor],
         res["s_final"][k].copy(), int(res["v_final"][k]), res["sig_final"][k].copy(),
         shocks, n_paths, burn, horizon, shock_at, env["fixed_mask"], env["fixed_chi"])

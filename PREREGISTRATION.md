@@ -437,4 +437,67 @@ at w = 0 and w = 1.
 
 ## Amendments
 
+**11 November 2026, before any run of this experiment.** The audit in pre-registration 8
+found that the price grid in the state was coarser than the paper's. Which price grid this
+experiment uses is decided by rule L1 there, before it is run; the prediction, its
+thresholds and the design above are unchanged.
+
+---
+
+# Pre-registration 8: price grid per lagged value (audit of the implementation)
+
+Written on 11 November 2026, before the two runs below were made on the full budget.
+
+## What the audit found
+
+The baseline at the paper's grid sizes gave Δ = 0.31 instead of about 0.75 (check B1).
+Comparing the code with the paper's text line by line turned up one difference. The paper
+builds the price grid "similarly" to the order grid, which is defined per value, and its
+footnote 16 says that with n_p ≈ 2 n_x "a one-grid point change in one informed AI
+speculator's order will result in a change in price p_t over the grid", and that a coarser
+grid "lowers the possibility of algorithmic collusion through price-trigger strategies".
+The code used **one price grid for all values**. There one order step moves the price by
+0.001–0.012, while a price bin is 0.088 wide (paper's sizes), so a deviation is almost
+never visible in the state. With **one price grid per lagged value** (option
+`price_grid="per_value"`) one order step moves the price by one grid point, as the
+footnote requires. Results with the old setting are unchanged bit for bit.
+
+A first look on the slow cloud machine (12 runs, cap 10⁹, not a full-budget run and seen
+before this text was written): Δ = 0.39, collusive part 5.9 %, no run converged. So the
+difference matters but does not close the gap by itself at that learning length.
+
+All results of pre-registrations 1–7 were obtained with the single price grid. They stand
+as results for a market with coarse price monitoring; whether they carry over to the
+paper's finer monitoring is what part L tests.
+
+## Runs
+
+**Part P — paper's sizes, price grid per value.** As check B (10 value levels, 15 actions,
+31 price bins, paper's action grid and convergence rule, σᵤ = 0.1, exact equal
+information), cap 10¹⁰ periods, 12 runs for the pair and 6 for a lone learner.
+
+- **P1.** *Reproduced* if mean Δ ≥ 0.65; *partly* if 0.50 ≤ Δ < 0.65; *not reproduced*
+  below 0.50. Converged share and collusive part are reported.
+
+**Part L — laptop sizes, price grid per value.** Profiles (0, 0), (0, 1), (0.5, 0.5);
+σᵤ ∈ {0.1, 100}; pair and lone-learner controls; equal action grid ±30 %, variant A, cap
+2 × 10⁸, 20 runs. With noisy signals the grid is the one of the realised lagged value;
+prices outside it fall into its end bins.
+
+- **L1 — main result.** At each σᵤ: *informative* if the collusive part at (0, 0) is
+  ≥ 0.03 and > 2 SE; then *holds* if the larger collusive part at (0, 1) is at most half of
+  it. Overall *holds* at every informative σᵤ / *fails* / *uninformative*.
+- **L2 — noise effect** (descriptive): the same ratio for (0.5, 0.5).
+- Descriptive: how the collusive part at (0, 0) compares with the single-grid value
+  (10.2 % and 7.2 %), and the converged shares.
+
+## What follows from the outcome
+
+If L1 holds, the experiments are repeated with the per-value grid as the main setting
+before the final report, and pre-registration 7 is run with it (amendment below). If L1
+fails or is uninformative, the earlier results are reported as specific to coarse price
+monitoring, and the design is reconsidered before any further run.
+
+## Amendments
+
 None yet.
