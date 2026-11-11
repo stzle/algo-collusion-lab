@@ -20,14 +20,15 @@ to be learning too ("collusive part").
 
 | Column | Meaning |
 |---|---|
-| experiment | Which experiment: `robustness` (pre-registration 1), `precision` (2 and 3), `shock` (4), `final_M` / `final_P` / `final_G` (5) |
+| experiment | Which experiment: `robustness` (pre-registration 1), `precision` (2 and 3), `shock` (4), `final_M` / `final_P` / `final_G` (5), `checks_S` / `checks_H` / `checks_B` (6) |
 | sigma_u | Noise-trading volume σᵤ: 0.1 = low (prices informative), 100 = high |
 | noise_spec1, noise_spec2 | Standard deviation of the signal noise of each speculator (0 = sees the value exactly). The asset value has standard deviation 1. |
 | grid_width | Action grid: each speculator chooses aggressiveness between (1 − w) and (1 + w) × its own Nash level |
 | monitoring | What the speculators remember about the last period: `realized` = the true value (variant A), `own_signal` = their own past signal (variant B) |
 | period_cap | Maximum learning length in periods; runs that have not converged stop here |
-| value_levels | Number of possible asset values (6 by default; 10 in the finer-grid check) |
-| who_learns | `pair` = both learn; `spec1_alone` / `spec2_alone` = only this speculator learns, the other plays its fixed Nash strategy (control) |
+| value_levels | Number of possible asset values (6 by default; 10 in the finer-grid check and the paper-scale baseline) |
+| learning_setting | `base` (α = 0.01, β = 5 × 10⁻⁷), a changed learning rate or exploration decay such as `alpha=0.005`, or `paper` (grid sizes and convergence rule of Dou, Goldstein & Ji; then grid_width is `paper`) |
+| who_learns | `pair` = both learn; `spec1_alone` / `spec2_alone` = only this speculator learns, the other plays its fixed Nash strategy (control); `spec1_vs_solo_level` / `spec2_vs_solo_level` = this speculator learns, the other is fixed at the level it reached when it learned alone (check S) |
 | runs | Number of independent learning runs (seeds) averaged in this row |
 | converged_share | Share of runs whose learned strategies stopped changing for 100,000 periods (after exploration < 1 %). The rest hit the period cap. |
 | restraint_spec1/2 | Average aggressiveness ÷ the best response to what the other speculator actually does. 1 = no restraint, 0.9 = trades 10 % below its best response. Empty for a speculator that does not learn. |
@@ -55,7 +56,8 @@ to be learning too ("collusive part").
 | collusive_part_se | Its standard error (the two sets of runs are treated as independent) |
 | learning_bias | 1 − restraint_alone: restraint without anyone to coordinate with |
 | phantom_part | *Exploratory, not pre-registered.* The collusive part that would appear if both speculators simply kept their lone-learner behaviour, with no coordination at all. It arises because each one's best response rises when the other trades less. Assumes each speculator's solo bias stays the same in a pair. |
-| collusive_part_corrected | collusive_part − phantom_part: coordination beyond independent learning biases |
+| collusive_part_corrected | collusive_part − phantom_part. **Rejected by check S1** (pre-registration 6): the direct measurement was closer to the uncorrected value in 10 of 12 cases, so this correction removes too much. Kept for transparency only. |
+| collusive_part_clean (± SE) | Restraint against an opponent fixed at its lone-learner level − restraint in the pair. A direct measurement that needs no assumption; available for the six profiles of check S. Use this where it exists. |
 | converged_share_pair | converged_share of the pair runs |
 | punishment_shock{s}[_spec1/2] | Shock test only: shock response in the pair minus that of the lone learner. Punishment rule (pre-registration 4): above 2 SE and ≥ 0.005 at both the 11.5 % and the 15 % shock. |
 | punishment_se_shock{s}[…] | Its standard error |
