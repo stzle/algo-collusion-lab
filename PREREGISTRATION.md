@@ -370,3 +370,71 @@ pair and 20 for a lone learner.
 ## Amendments
 
 None yet.
+
+---
+
+# Pre-registration 7: shared versus private noise (signal similarity)
+
+Committed on 11 November 2026, **before** the engine was changed to allow shared noise and
+before any run. The prediction and its thresholds are Renat Shyhin's own, written before
+any result of this experiment existed; the design below it was fixed by Claude (AI
+assistant), which also proposed the experiment.
+
+## Question
+
+All earlier runs changed how *precise* the signals are. They cannot say whether collusion
+breaks because signals are imprecise or because the two speculators no longer see the
+*same* thing. This experiment holds precision fixed and changes only how much of the
+noise the two speculators share.
+
+## Prediction (Renat Shyhin, 11 November 2026, 16:08 CET, unchanged wording)
+
+> 1. At 100 % shared noise, coordination returns to roughly the exact-information level,
+>    about 10 %. Reason: the signal is common, so the situation is symmetric. Each
+>    speculator can predict the other's order and notice a deviation. Symmetry matters,
+>    not the blur of the signal. Confidence: "most likely".
+> 2. "Collusion survives" means coordination at 100 % shared noise is ≥ 6 % and more than
+>    2 SE.
+> 3. I am wrong if coordination at 100 % is below 3 %, i.e. at the level of independent
+>    noise. A result between 3 % and 6 % counts as "partly right / inconclusive".
+
+## Design
+
+Both speculators receive a signal with noise standard deviation 0.5:
+
+  signal_i = value + 0.5 · ( √w · η + √(1 − w) · e_i ),
+
+with η, e₁, e₂ independent standard normal and w the shared part of the noise variance,
+w ∈ {0, 0.25, 0.5, 0.75, 1}. The signal is then placed on the value grid as before. Each
+signal is equally precise for every w; at w = 1 both speculators receive the identical
+signal, at w = 0 this is the earlier profile (0.5, 0.5).
+
+σᵤ ∈ {0.1, 100}; for every w the pair and one lone learner against a fixed Nash opponent;
+equal grid ±30 %, variant A, cap 2 × 10⁸, 20 runs (seeds 1–20). Nash strategies and best
+responses are derived for the joint signal distribution of each w before the runs; at
+w = 0 they must reproduce the existing benchmarks of (0.5, 0.5).
+
+"Coordination" is the collusive part *c* of pre-registration 1 (restraint of the lone
+learner − restraint in the pair). For reference, at σᵤ = 0.1: exact information
+*c* = 10.2 %, independent noise 0.5 (w = 0) *c* = 2.4 % in the earlier runs.
+
+## Decision rules
+
+**V1 — the prediction (σᵤ = 0.1, w = 1).** *Confirmed* if *c* ≥ 0.06 and *c* > 2 SE.
+*Wrong* if *c* < 0.03. Anything else: *partly right / inconclusive*.
+
+**V2 — high noise trading (σᵤ = 100, w = 1), secondary, added by Claude.** The same rule
+with the thresholds in proportion to the exact-information level there (7.2 %):
+*confirmed* if *c* ≥ 0.043 and > 2 SE, *wrong* if *c* < 0.022.
+
+**V3 — punishment (σᵤ = 0.1, w = 1), secondary, added by Claude.** The prediction's reason
+is that a deviation can be noticed. Shock test and punishment rule of pre-registration 4:
+*punishment returns* if at least one speculator punishes, otherwise *no punishment*.
+
+**Descriptive, no rule:** *c* for every w (does it rise steadily with the shared part?);
+the direct measurement of pre-registration 6 (opponent fixed at its lone-learner level)
+at w = 0 and w = 1.
+
+## Amendments
+
+None yet.
