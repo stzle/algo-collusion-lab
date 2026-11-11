@@ -500,4 +500,22 @@ monitoring, and the design is reconsidered before any further run.
 
 ## Amendments
 
-None yet.
+**11 November 2026, after parts P and L were run (P1 not reproduced, L1 holds) and before
+part M was run.** Reading the L results showed a weakness in how the finer grid was built
+for noisy signals. The grid is the one of the *realised* lagged value, but a speculator
+with a noisy signal traded on its *signal*. When signal and value differ, its own order
+already pushes the price outside its grid, although it knows that order. Part of the drop
+under noise in part L could therefore come from this construction and not from the
+economics. Part M repeats the noisy profiles of part L with the grid of the speculator's
+**own past signal** (variant B, `monitor="own_signal"`), which removes exactly this effect:
+profiles (0, 1) and (0.5, 0.5), σᵤ ∈ {0.1, 100}, pair and controls, otherwise as part L.
+At (0, 0) the two constructions are identical.
+
+- **M1 — does the construction matter?** For every noisy case and speculator, the collusive
+  part with the own-signal grid is compared with part L. *Matters* if any differs by more
+  than max(0.02, 2 SE); otherwise *does not matter*.
+- **M2 — main result with the own-signal grid:** rule L1 applied to part M.
+
+If M1 = *matters*, results under noisy signals depend on how the price memory is built,
+and that has to be settled (in the report, as a design choice with both versions shown)
+before pre-registration 7 is run.
