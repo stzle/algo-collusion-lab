@@ -152,7 +152,10 @@ def main():
     ap.add_argument("--max-periods", type=float, default=G.LAPTOP["max_periods"])
     ap.add_argument("--out", default="shock")
     ap.add_argument("--analyze-only", action="store_true")
+    ap.add_argument("--price-grid", default="global", choices=["global", "per_value"],
+                    help="price grid in the state: single grid (earlier runs) or one per lagged value")
     args = ap.parse_args()
+    G.LAPTOP["price_grid"] = args.price_grid
 
     out = C.out_dir(args.out)
     path = out / "points.json"
@@ -177,7 +180,7 @@ def main():
                   + "; ".join(f"spec{i + 1} " + " ".join(f"{x:+.2f}" for x in m[:, i]) for i in range(m.shape[1]))
                   + f"  [IRF {tm.seconds:.0f} s]", flush=True)
             records = [r for r in records if key(r) != key(p)]
-            records.append({**p, "sessions": len(seeds), "paths": args.paths,
+            records.append({**p, "price_grid": args.price_grid, "sessions": len(seeds), "paths": args.paths,
                             "converged_share": s["converged_share"], "restraint": s["restraint_vs_best_response"],
                             "R_t4": R[:, :, T_AFTER, :], "R_mean": R.mean(axis=0),
                             "wall_clock_seconds": s["wall_clock_seconds"] + tm.seconds})

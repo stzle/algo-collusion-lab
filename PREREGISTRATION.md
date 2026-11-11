@@ -519,3 +519,41 @@ At (0, 0) the two constructions are identical.
 If M1 = *matters*, results under noisy signals depend on how the price memory is built,
 and that has to be settled (in the report, as a design choice with both versions shown)
 before pre-registration 7 is run.
+
+**12 November 2026.** Part M was run: M1 = *does not matter* (no case differs by more than
+max(0.02, 2 SE); the largest differences are −1.1 and −1.3 points at (0.5, 0.5)),
+M2 = *holds*.
+
+---
+
+# Pre-registration 9: core experiments with the price grid per lagged value
+
+Written on 12 November 2026, before any of these runs. Rule L1 of pre-registration 8 held,
+so the price grid per lagged value (`price_grid="per_value"`, grid of the realised lagged
+value, variant A) becomes the main setting. The three core experiments are repeated with
+it, with **the same designs and the same decision rules as before**, applied by the same
+scripts (`scripts/14_fine_grid_core.py` runs them):
+
+| Experiment | Earlier pre-registration | Rules | Output |
+|---|---|---|---|
+| Precision sweep, 44 points | 2 | P1 (shape), P2 (no perfectly informed speculator needed) | `results/precision_fine` |
+| Noise versus inequality, 28 further points | 3 | I1, I2 | `results/precision_fine` |
+| Shock test, 24 runs | 4 | T1–T4 | `results/shock_fine` |
+
+Nothing else changes: equal action grid ±30 %, cap 2 × 10⁸, 20 runs (seeds 1–20),
+σᵤ ∈ {0.1, 100}. For T4 the learning bias of the worse-informed speculator must again be
+≥ 0.03 at (0, 1) in the new runs.
+
+**How the two sets of results are used.** The runs with the single price grid
+(pre-registrations 1–6) are reported as the *coarse monitoring* condition, the new runs as
+the *fine monitoring* condition, which is the one closest to the paper. Where the two
+disagree, the report says so and gives both; the fine-monitoring verdicts are the main ones.
+The exploratory correction rejected by rule S1 is not used.
+
+**Not repeated here:** grid widths, learning length, α and β, the direct measurement of
+coordination and the finer value grid. A short version of these checks for the fine grid
+follows in a separate pre-registration once these results exist.
+
+## Amendments
+
+None yet.

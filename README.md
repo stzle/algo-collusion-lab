@@ -102,6 +102,7 @@ learning path on Apple Silicon and on the x86 test machine (checked on an M4:
 | `11_final_checks.py` | Market quality for all precision profiles, punishment at equal noise 0.125, finer value grid (n_v = 10); rules in `PREREGISTRATION.md` (part 5) | 50 runs × 20 sessions (~1.5 h) |
 | `12_hygiene_checks.py` | Checks of weak points: opponent fixed at its lone-learner level, α and β halved and doubled, baseline at the paper's grid sizes; rules in `PREREGISTRATION.md` (part 6) | 46 runs (~1.5 h) |
 | `13_price_grid_audit.py` | Audit: price grid per lagged value (the paper's footnote 16) at the paper's sizes and at laptop sizes; rules in `PREREGISTRATION.md` (part 8) | 26 runs (~1.5 h; part M alone ~15 min) |
+| `14_fine_grid_core.py` | Precision sweep, noise versus inequality and shock test repeated with the price grid per lagged value; same rules (`PREREGISTRATION.md` part 9) | 96 runs (~2 h) |
 
 A small version of everything, to check that it all works:
 

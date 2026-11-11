@@ -168,7 +168,10 @@ def main():
     ap.add_argument("--max-periods", type=float, default=G.LAPTOP["max_periods"])
     ap.add_argument("--out", default="precision")
     ap.add_argument("--analyze-only", action="store_true")
+    ap.add_argument("--price-grid", default="global", choices=["global", "per_value"],
+                    help="price grid in the state: single grid (earlier runs) or one per lagged value")
     args = ap.parse_args()
+    G.LAPTOP["price_grid"] = args.price_grid
 
     out = C.out_dir(args.out)
     path = out / "points.json"
@@ -186,7 +189,7 @@ def main():
             s, _ = G.run_point(prm, seeds)
             G.print_point(f"[{n}/{len(todo)}] σu={p['sigma_u']:g} q=({p['q1']:g},{p['q2']:g}) {p['who']}", s)
             records = [r for r in records if key(r) != key(p)]
-            records.append({**p, "sessions": s["sessions"], "converged_share": s["converged_share"],
+            records.append({**p, "price_grid": args.price_grid, "sessions": s["sessions"], "converged_share": s["converged_share"],
                             "restraint": s["restraint_vs_best_response"],
                             "restraint_se": s["restraint_vs_best_response_se"],
                             "delta": s["delta_all"], "benchmarks": s["benchmarks"],

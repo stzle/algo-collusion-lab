@@ -4,6 +4,8 @@ Rules: PREREGISTRATION.md, pre-registration 8.
 
 - **P1 (baseline at the paper's sizes):** not reproduced — Δ = 0.423 ± 0.013 (paper ≈ 0.75), 100% of 12 runs converged
 - **L1 (main result with the finer price grid):** holds
+- **M1 (does the grid construction under noisy signals matter?):** does not matter
+- **M2 (main result with the own-signal grid):** holds
 
 Paper's sizes: collusive part 6.2 %, learning bias 7.3 %, profit per speculator 51.5 / 51.4.
 
@@ -11,3 +13,12 @@ Paper's sizes: collusive part 6.2 %, learning bias 7.3 %, profit per speculator 
 |---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
 | 0.1 | 12.4 | 0.3 | 10.2 | 100% | +4.9 | +1.0 | +3.3 | 0.39 | 0.27 | holds |
 | 100.0 | 11.1 | 0.1 | 7.2 | 0% | +1.2 | +2.2 | +4.7 | 0.20 | 0.42 | holds |
+
+| σᵤ | profile | speculator | c, grid of realised value | c, grid of own signal | diff | ± | differs |
+|---:|---|---|---:|---:|---:|---:|---|
+| 0.1 | 0, 1 | spec1 | +4.9 | +5.1 | +0.3 | 0.4 | no |
+| 0.1 | 0, 1 | spec2 | +1.0 | +1.1 | +0.1 | 0.5 | no |
+| 0.1 | 0.5, 0.5 | both | +3.3 | +2.2 | -1.1 | 0.4 | no |
+| 100 | 0, 1 | spec1 | +1.2 | +1.2 | -0.0 | 0.2 | no |
+| 100 | 0, 1 | spec2 | +2.2 | +2.8 | +0.6 | 0.2 | no |
+| 100 | 0.5, 0.5 | both | +4.7 | +3.4 | -1.3 | 0.2 | no |
