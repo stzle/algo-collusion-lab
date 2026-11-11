@@ -73,6 +73,94 @@
       }
     }
   },
+  "M1": "does not matter",
+  "M2": "holds",
+  "M": [
+    {
+      "sigma_u": 0.1,
+      "profile": [
+        0.0,
+        1.0
+      ],
+      "speculator": "spec1",
+      "c_value_grid": 0.04856536420958768,
+      "c_signal_grid": 0.05119644305082316,
+      "diff": 0.002631078841235479,
+      "se": 0.003754576234304525,
+      "differs": false,
+      "converged_signal_grid": 0.0
+    },
+    {
+      "sigma_u": 0.1,
+      "profile": [
+        0.0,
+        1.0
+      ],
+      "speculator": "spec2",
+      "c_value_grid": 0.00997205974922899,
+      "c_signal_grid": 0.011107550833630797,
+      "diff": 0.0011354910844018073,
+      "se": 0.005289959628909845,
+      "differs": false,
+      "converged_signal_grid": 0.0
+    },
+    {
+      "sigma_u": 0.1,
+      "profile": [
+        0.5,
+        0.5
+      ],
+      "speculator": "both",
+      "c_value_grid": 0.03323812914370772,
+      "c_signal_grid": 0.02219208590368571,
+      "diff": -0.011046043240022008,
+      "se": 0.004095553387141973,
+      "differs": false,
+      "converged_signal_grid": 0.0
+    },
+    {
+      "sigma_u": 100.0,
+      "profile": [
+        0.0,
+        1.0
+      ],
+      "speculator": "spec1",
+      "c_value_grid": 0.011667958880157592,
+      "c_signal_grid": 0.011563163630005535,
+      "diff": -0.0001047952501520566,
+      "se": 0.0022323213427596386,
+      "differs": false,
+      "converged_signal_grid": 0.0
+    },
+    {
+      "sigma_u": 100.0,
+      "profile": [
+        0.0,
+        1.0
+      ],
+      "speculator": "spec2",
+      "c_value_grid": 0.021812210559982725,
+      "c_signal_grid": 0.028231903841830275,
+      "diff": 0.006419693281847549,
+      "se": 0.0022931240120962586,
+      "differs": false,
+      "converged_signal_grid": 0.0
+    },
+    {
+      "sigma_u": 100.0,
+      "profile": [
+        0.5,
+        0.5
+      ],
+      "speculator": "both",
+      "c_value_grid": 0.046684922308225296,
+      "c_signal_grid": 0.03369621564849756,
+      "diff": -0.012988706659727733,
+      "se": 0.0018978339033685404,
+      "differs": false,
+      "converged_signal_grid": 0.0
+    }
+  ],
   "P": {
     "delta": 0.4225000476145921,
     "delta_se": 0.012985867123609334,
