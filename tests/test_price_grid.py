@@ -49,3 +49,18 @@ def test_plan():
     assert len(p) == 2 * 7 + 2 and len({A.key(x) for x in p}) == len(p)
     assert A.params_for(p[0]).price_grid == "per_value"
     assert A.params_for(p[-1]).max_periods == 10_000_000_000
+    m = A.plan(["M"], [0.1, 100.0])
+    assert len(m) == 2 * 5
+    prm = A.params_for(m[0])
+    assert prm.monitor == "own_signal" and prm.price_grid == "per_value"
+
+
+def test_part_m_analysis_on_saved_part_l():
+    """With the saved L runs standing in for M, nothing can differ."""
+    import json
+    recs = json.loads((ROOT / "reference_results" / "price_grid" / "points.json").read_text())["points"]
+    fake = [dict(r, part="M") for r in recs if r["part"] == "L" and (r["q1"], r["q2"]) != (0.0, 0.0)]
+    v = A.analyze(recs + fake, [0.1, 100.0])
+    assert v["L1"] == "holds" and v["P1"] == "not reproduced"
+    assert v["M1"] == "does not matter" and v["M2"] == "holds"
+    assert len(v["M"]) == 2 * 3
