@@ -10,7 +10,7 @@ Export every saved run into two flat tables (CSV) for checking the results by ha
 
     python scripts/export_data.py
 
-Reads reference_results/{robustness,precision,shock}/points.json and, when present,
+Reads reference_results/{robustness,precision,shock,final,hygiene}/points.json and, when present,
 results/final/points.json (or reference_results/final/points.json).
 Column definitions: data/COLUMNS.md
 """
@@ -33,7 +33,8 @@ SHOCKS = ["0.25", "2.5", "11.5", "15"]
 
 # who learns -> (label, which speculators learn)
 CELL = {"pair": ("pair", (0, 1)), "alone": ("spec1_alone", (0,)), "informed_only": ("spec1_alone", (0,)),
-        "noisy_only": ("spec2_alone", (1,)), "only0": ("spec1_alone", (0,)), "only1": ("spec2_alone", (1,))}
+        "noisy_only": ("spec2_alone", (1,)), "only0": ("spec1_alone", (0,)), "only1": ("spec2_alone", (1,)),
+        "solo_level0": ("spec1_vs_solo_level", (0,)), "solo_level1": ("spec2_vs_solo_level", (1,))}
 
 
 def _load(*names):
@@ -49,7 +50,8 @@ def rows_all():
     sources = [("robustness", _load("reference_results/robustness/points.json")),
                ("precision", _load("reference_results/precision/points.json")),
                ("shock", _load("reference_results/shock/points.json")),
-               ("final", _load("results/final/points.json", "reference_results/final/points.json"))]
+               ("final", _load("results/final/points.json", "reference_results/final/points.json")),
+               ("checks", _load("results/hygiene/points.json", "reference_results/hygiene/points.json"))]
     for exp, data in sources:
         if data is None:
             continue
@@ -57,10 +59,13 @@ def rows_all():
         for p in data["points"]:
             q1, q2 = (0.0, p["noise"]) if exp == "robustness" else (p["q1"], p["q2"])
             cell, learners = CELL[p["who"]]
-            r = {"experiment": exp if exp != "final" else f"final_{p['part']}",
+            paper = exp == "checks" and p["part"] == "B"
+            r = {"experiment": exp if exp not in ("final", "checks") else f"{exp}_{p['part']}",
                  "sigma_u": p["sigma_u"], "noise_spec1": q1, "noise_spec2": q2,
-                 "grid_width": p.get("width", 0.3), "monitoring": p.get("monitor", "realized"),
-                 "period_cap": p.get("cap", 200_000_000), "value_levels": p.get("n_v", 6),
+                 "grid_width": "paper" if paper else p.get("width", 0.3), "monitoring": p.get("monitor", "realized"),
+                 "period_cap": 2_000_000_000 if paper else p.get("cap", 200_000_000),
+                 "value_levels": 10 if paper else p.get("n_v", 6),
+                 "learning_setting": p.get("setting", "base"),
                  "who_learns": cell, "runs": p["sessions"], "converged_share": p["converged_share"]}
             for i in (0, 1):
                 learn = i in learners
@@ -90,14 +95,14 @@ def rows_all():
             r["date"] = date
             r = {"id": "|".join(str(r[k]) for k in ("experiment", "sigma_u", "noise_spec1", "noise_spec2",
                                                      "grid_width", "monitoring", "period_cap", "value_levels",
-                                                     "who_learns")), **r}
+                                                     "learning_setting", "who_learns")), **r}
             out.append(r)
     return out
 
 
 def _key(r):
     return (r["experiment"], r["sigma_u"], r["noise_spec1"], r["noise_spec2"], r["grid_width"],
-            r["monitoring"], r["period_cap"], r["value_levels"])
+            r["monitoring"], r["period_cap"], r["value_levels"], r["learning_setting"])
 
 
 def _n(x):
@@ -110,10 +115,13 @@ def rows_derived(allr):
         groups.setdefault(_key(r), {})[r["who_learns"]] = r
     v_grids = {}
     out = []
+    hv = _load("results/hygiene/verdicts.json", "reference_results/hygiene/verdicts.json")
+    clean = {(float(r["sigma_u"]), float(r["profile"][0]), float(r["profile"][1]), r["speculator"]):
+             (r["clean"], r["clean_se"]) for r in (hv["S"]["rows"] if hv else [])}
     for k, g in groups.items():
         if "pair" not in g or "spec1_alone" not in g:
             continue
-        exp, su, q1, q2, w, mon, cap, n_v = k
+        exp, su, q1, q2, w, mon, cap, n_v, setting = k
         sym = q1 == q2
         if not sym and "spec2_alone" not in g:
             continue
@@ -142,13 +150,18 @@ def rows_derived(allr):
                 ra, ra_se = alone[i]
                 mech = ra - r_mech[i]
             c = ra - rp
-            row = {"id": f"{exp}|{su}|{q1}|{q2}|{w}|{mon}|{cap}|{n_v}|{name}", "experiment": exp, "sigma_u": su, "noise_spec1": q1, "noise_spec2": q2, "grid_width": w,
-                   "monitoring": mon, "period_cap": cap, "value_levels": n_v, "speculator": name,
+            row = {"id": f"{exp}|{su}|{q1}|{q2}|{w}|{mon}|{cap}|{n_v}|{setting}|{name}", "experiment": exp, "sigma_u": su, "noise_spec1": q1, "noise_spec2": q2, "grid_width": w,
+                   "monitoring": mon, "period_cap": cap, "value_levels": n_v, "learning_setting": setting,
+                   "speculator": name,
                    "restraint_pair": rp, "restraint_alone": ra,
                    "collusive_part": c, "collusive_part_se": math.hypot(ra_se, rp_se),
                    "learning_bias": 1 - ra, "learning_bias_se": ra_se,
                    "phantom_part": mech, "collusive_part_corrected": c - mech,
+                   "collusive_part_clean": float("nan"), "collusive_part_clean_se": float("nan"),
                    "converged_share_pair": pr["converged_share"]}
+            cl = clean.get((float(su), float(q1), float(q2), name)) if exp == "precision" else None
+            if cl:
+                row["collusive_part_clean"], row["collusive_part_clean_se"] = cl
             if "shock15_response_spec1" in pr:
                 for lab in SHOCKS:
                     for_spec = [0, 1] if sym else [i]
