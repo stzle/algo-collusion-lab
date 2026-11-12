@@ -72,7 +72,7 @@ python scripts/00_check_setup.py
 pytest -q
 ```
 
-`pytest` should report 70 passed.
+`pytest` should report 77 passed.
 
 `00_check_setup.py` warns if Python runs as x86_64 (about 2× slower), compiles the
 code once (cached afterwards, so later runs start immediately), prints your
@@ -103,6 +103,8 @@ learning path on Apple Silicon and on the x86 test machine (checked on an M4:
 | `12_hygiene_checks.py` | Checks of weak points: opponent fixed at its lone-learner level, α and β halved and doubled, baseline at the paper's grid sizes; rules in `PREREGISTRATION.md` (part 6) | 46 runs (~1.5 h) |
 | `13_price_grid_audit.py` | Audit: price grid per lagged value (the paper's footnote 16) at the paper's sizes and at laptop sizes; rules in `PREREGISTRATION.md` (part 8) | 26 runs (~1.5 h; part M alone ~15 min) |
 | `14_fine_grid_core.py` | Precision sweep, noise versus inequality and shock test repeated with the price grid per lagged value; same rules (`PREREGISTRATION.md` part 9) | 96 runs (~2 h) |
+| `15_shared_noise.py` | Shared versus private noise at equal precision 0.5: Renat's prediction (`PREREGISTRATION.md` part 7) | 24 runs (~45 min) |
+| `playground.py` | One setting (pair and lone learner) in one to two minutes, for practice and live demos; not part of any pre-registered experiment | 4 runs |
 
 A small version of everything, to check that it all works:
 

@@ -55,6 +55,9 @@ class DGJParams:
     # value, so one step in one speculator's order moves the price by about one grid point,
     # as DGJ's footnote 16 requires with n_p = 2 n_x)
     price_grid: str = "global"
+    # share of the signal-noise variance that the two speculators have in common:
+    # noise_i = sigma_eps_i * (sqrt(w) * eta + sqrt(1 - w) * e_i), eta shared. 0 = independent.
+    noise_shared: float = 0.0
     # discretisation (DGJ: n_v = 10, n_x = 15, n_p = 31, iota = 0.1)
     n_v: int = 6
     n_x: int = 13
@@ -85,7 +88,10 @@ def setup(prm: DGJParams) -> dict:
         raise ValueError("sigma_eps needs one entry per speculator")
     v_grid = bmk.value_grid(prm.n_v, prm.v_bar, prm.sigma_v)
     edges = bmk.bin_edges(v_grid)
-    bm = bmk.benchmarks(v_grid, prm.sigma_eps, prm.xi, prm.theta, prm.sigma_u, prm.v_bar)
+    if not 0.0 <= prm.noise_shared <= 1.0:
+        raise ValueError("noise_shared must be between 0 and 1")
+    bm = bmk.benchmarks(v_grid, prm.sigma_eps, prm.xi, prm.theta, prm.sigma_u, prm.v_bar,
+                        prm.noise_shared)
     chiN, chiM = bm["nash"]["chi"], bm["cartel"]["chi"]
     lamN = bm["nash"]["lam"]
 
@@ -156,7 +162,9 @@ def setup(prm: DGJParams) -> dict:
 
     return {"v_grid": v_grid, "edges": edges, "bm": bm, "chi_grid": chi_grid,
             "p_grid": p_grid, "p0": p0, "dp": dp, "Q0": Q0, "lam0": lamN,
-            "sig_eps": np.asarray(prm.sigma_eps, dtype=float),
+            # with shared noise, its share rides along as one extra entry (read by _draw_signals)
+            "sig_eps": (np.append(np.asarray(prm.sigma_eps, dtype=float), prm.noise_shared)
+                        if prm.noise_shared > 0 else np.asarray(prm.sigma_eps, dtype=float)),
             "fixed_mask": fixed_mask, "fixed_chi": fixed_chi}
 
 
@@ -196,6 +204,31 @@ def _draw_signal(v_idx, v_grid, edges, sd):
 
 
 @njit(cache=True)
+def _draw_signals(v_idx, v_grid, edges, sig_eps, I, out):
+    """Signals of all I speculators. sig_eps holds one noise level per speculator and,
+    when noise is partly shared, the shared share w as an extra last entry. With w = 0
+    this draws exactly as I calls of _draw_signal (same random numbers)."""
+    w = sig_eps[I] if sig_eps.shape[0] > I else 0.0
+    if w <= 0.0:
+        for i in range(I):
+            out[i] = _draw_signal(v_idx, v_grid, edges, sig_eps[i])
+        return
+    eta = np.random.standard_normal()
+    a = np.sqrt(w)
+    b = np.sqrt(1.0 - w)
+    for i in range(I):
+        sd = sig_eps[i]
+        if sd <= 0.0:
+            out[i] = v_idx
+            continue
+        val = v_grid[v_idx] + sd * (a * eta + b * np.random.standard_normal())
+        k = 0
+        while k < edges.shape[0] and val > edges[k]:
+            k += 1
+        out[i] = k
+
+
+@njit(cache=True)
 def _price_bin(p, p0, dp, n_p):
     b = int(np.floor((p - p0) / dp + 0.5))
     if b < 0:
@@ -227,8 +260,7 @@ def run_session(seed, v_grid, edges, sig_eps, chi_grid, p0, dp, n_p, Q0,
     x = np.empty(I)
 
     v_idx = np.random.randint(n_v)
-    for i in range(I):
-        sig[i] = _draw_signal(v_idx, v_grid, edges, sig_eps[i])
+    _draw_signals(v_idx, v_grid, edges, sig_eps, I, sig)
     pb0 = np.random.randint(n_p)
     for i in range(I):
         s[i] = (pb0 * n_v + np.random.randint(n_v)) * n_v + sig[i]
@@ -294,8 +326,7 @@ def run_session(seed, v_grid, edges, sig_eps, chi_grid, p0, dp, n_p, Q0,
         zc = -xi * pc
 
         v_next = np.random.randint(n_v)
-        for i in range(I):
-            sig_next[i] = _draw_signal(v_next, v_grid, edges, sig_eps[i])
+        _draw_signals(v_next, v_grid, edges, sig_eps, I, sig_next)
 
         changed = False
         for i in range(I):
@@ -475,6 +506,7 @@ def impulse_response(seed, Q, v_grid, edges, sig_eps, chi_grid, p0, dp, n_p, v_b
     s = s_start.copy()
     v_idx = v_start
     sig = sig_start.copy()
+    tmp_sig = np.empty(I, dtype=np.int64)
     for path in range(n_paths):
         # burn-in: let the chain move on so paths are not all identical
         for b in range(burn):
@@ -482,7 +514,9 @@ def impulse_response(seed, Q, v_grid, edges, sig_eps, chi_grid, p0, dp, n_p, v_b
             vseq[1] = np.random.randint(n_v)
             for i in range(I):
                 sigseq[0, i] = sig[i]
-                sigseq[1, i] = _draw_signal(vseq[1], v_grid, edges, sig_eps[i])
+            _draw_signals(vseq[1], v_grid, edges, sig_eps, I, tmp_sig)
+            for i in range(I):
+                sigseq[1, i] = tmp_sig[i]
             useq[0] = sigma_u * np.random.standard_normal()
             s = _greedy_path(Q, v_grid, chi_grid, p0, dp, n_p, v_bar, p_int, p_slope, monitor,
                              s, vseq[:2], sigseq[:2], useq[:1], 0.0, -1, chi_b, pt_b, fixed_mask, fixed_chi)
@@ -495,8 +529,9 @@ def impulse_response(seed, Q, v_grid, edges, sig_eps, chi_grid, p0, dp, n_p, v_b
             sigseq[0, i] = sig[i]
         for h in range(1, horizon + 1):
             vseq[h] = np.random.randint(n_v)
+            _draw_signals(vseq[h], v_grid, edges, sig_eps, I, tmp_sig)
             for i in range(I):
-                sigseq[h, i] = _draw_signal(vseq[h], v_grid, edges, sig_eps[i])
+                sigseq[h, i] = tmp_sig[i]
         for h in range(horizon):
             useq[h] = sigma_u * np.random.standard_normal()
         s_end = _greedy_path(Q, v_grid, chi_grid, p0, dp, n_p, v_bar, p_int, p_slope, monitor,
@@ -537,12 +572,13 @@ def run_fixed_strategies(seed, chi, v_grid, edges, sig_eps, v_bar, xi, theta, si
     prof = np.zeros(I)
     n_rec = 0
     x = np.empty(I)
+    ks = np.empty(I, dtype=np.int64)
     for t in range(Tm + periods):
         v_idx = np.random.randint(n_v)
         X = 0.0
+        _draw_signals(v_idx, v_grid, edges, sig_eps, I, ks)
         for i in range(I):
-            k = _draw_signal(v_idx, v_grid, edges, sig_eps[i])
-            x[i] = chi[i] * (v_grid[k] - v_bar)
+            x[i] = chi[i] * (v_grid[ks[i]] - v_bar)
             X += x[i]
         y = X + sigma_u * np.random.standard_normal()
         pc = p_int + p_slope * y
