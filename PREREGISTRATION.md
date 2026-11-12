@@ -449,6 +449,20 @@ observation in pre-registration 9: a speculator now counts as punishing only if,
 addition to the rule of pre-registration 4, **its own reaction in the pair** to the 11.5 %
 and the 15 % shock is ≥ 0.005 and > 2 SE. V1 and V2 are unchanged.
 
+**12 November 2026, later, before any run of this experiment.** V2 (Claude's rule) is
+rewritten. Its thresholds (4.3 % and 2.2 %) were scaled to the exact-information level of
+the coarse grid (7.2 %). With the fine grid, independent noise alone (w = 0) already gives
+a collusive part of 4.7 % at σᵤ = 100 (pre-registration 9), so the old V2 could
+"confirm" without any effect of sharing. New V2 at σᵤ = 100: *wrong* if
+c(w = 1) − c(w = 0) ≤ 2 SE; *confirmed* if that rise is larger than 2 SE and
+c(w = 1) ≥ 0.6 × 11.1 % (the fine-grid exact-information level); otherwise *partly right /
+inconclusive*.
+
+*Note on V1 (Renat's rule, unchanged).* With the fine grid, independent noise (w = 0)
+gives c = 3.3 % at σᵤ = 0.1 (pre-registration 9), just above V1's "wrong" threshold of 3 %,
+which the prediction describes as "the level of independent noise". V1 stays exactly as
+committed unless Renat amends it before the run.
+
 ---
 
 # Pre-registration 8: price grid per lagged value (audit of the implementation)

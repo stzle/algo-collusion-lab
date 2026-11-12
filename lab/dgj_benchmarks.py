@@ -57,8 +57,45 @@ def signal_matrix(v_grid: np.ndarray, sigma_eps: float) -> np.ndarray:
     return T
 
 
-def moments(v_grid: np.ndarray, sigma_eps: np.ndarray, v_bar: float = 1.0):
+def joint_signal_matrix(v_grid: np.ndarray, q1: float, q2: float, shared: float,
+                        n_eta: int = 4001) -> np.ndarray:
+    """J[j, a, b] = P(signal 1 = a, signal 2 = b | value = grid point j) when the noise
+    of speculator i is q_i * (sqrt(shared) * eta + sqrt(1 - shared) * e_i) with eta,
+    e_1, e_2 independent standard normal (eta common to both). Integrated over eta on a
+    fine grid; exact up to the integration error (about 1e-4)."""
+    n = len(v_grid)
+    edges = np.concatenate([[-np.inf], bin_edges(v_grid), [np.inf]])
+    eta = np.linspace(-8.0, 8.0, n_eta)
+    weta = norm.pdf(eta)
+    weta /= weta.sum()
+    a_, b_ = np.sqrt(shared), np.sqrt(1.0 - shared)
+
+    def cond(j, q):
+        """P(signal = k | v_j, eta) for all eta, shape (n_eta, n)."""
+        if q <= 0:
+            out = np.zeros((n_eta, n))
+            out[:, j] = 1.0
+            return out
+        centre = v_grid[j] + q * a_ * eta
+        if b_ <= 1e-12:
+            k = np.searchsorted(edges[1:-1], centre)
+            out = np.zeros((n_eta, n))
+            out[np.arange(n_eta), k] = 1.0
+            return out
+        cdf = norm.cdf((edges[None, :] - centre[:, None]) / (q * b_))
+        return np.diff(cdf, axis=1)
+
+    J = np.empty((n, n, n))
+    for j in range(n):
+        A, B = cond(j, q1), cond(j, q2)
+        J[j] = (A * weta[:, None]).T @ B
+    return J
+
+
+def moments(v_grid: np.ndarray, sigma_eps: np.ndarray, v_bar: float = 1.0, shared: float = 0.0):
     """Exact second moments of the discretised information structure.
+    `shared` is the share of the noise variance that the two speculators have in common
+    (0 = independent noise, the default).
 
     Returns C (I,), S (I, I), and var_v (variance of the discrete v)."""
     I = len(sigma_eps)
@@ -75,6 +112,11 @@ def moments(v_grid: np.ndarray, sigma_eps: np.ndarray, v_bar: float = 1.0):
         for j in range(I):
             # signals are independent conditional on v
             S[i, j] = np.sum(pv * Ed2[i]) if i == j else np.sum(pv * Ed[i] * Ed[j])
+    if shared > 0:
+        if I != 2:
+            raise ValueError("shared noise is implemented for two speculators")
+        J = joint_signal_matrix(v_grid, float(sigma_eps[0]), float(sigma_eps[1]), shared)
+        S[0, 1] = S[1, 0] = float(np.sum(pv[:, None, None] * J * d[None, :, None] * d[None, None, :]))
     return C, S, float(np.sum(pv * w ** 2))
 
 
@@ -107,9 +149,9 @@ def solve(kind: str, C, S, xi: float, theta: float, sigma_u: float) -> dict:
             "gamma1": (chi @ C) / var_y}
 
 
-def benchmarks(v_grid, sigma_eps, xi, theta, sigma_u, v_bar=1.0) -> dict:
+def benchmarks(v_grid, sigma_eps, xi, theta, sigma_u, v_bar=1.0, shared=0.0) -> dict:
     sigma_eps = np.asarray(sigma_eps, dtype=float)
-    C, S, var_v = moments(v_grid, sigma_eps, v_bar)
+    C, S, var_v = moments(v_grid, sigma_eps, v_bar, shared)
     nash = solve("nash", C, S, xi, theta, sigma_u)
     cartel = solve("cartel", C, S, xi, theta, sigma_u)
     return {"C": C, "S": S, "var_v": var_v, "nash": nash, "cartel": cartel}
