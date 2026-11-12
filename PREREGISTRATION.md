@@ -442,6 +442,13 @@ found that the price grid in the state was coarser than the paper's. Which price
 experiment uses is decided by rule L1 there, before it is run; the prediction, its
 thresholds and the design above are unchanged.
 
+**12 November 2026, before any run of this experiment.** Rule L1 held, so this experiment
+uses the price grid per lagged value (`price_grid="per_value"`, variant A). Rule V3, which
+was added by Claude and is not part of Renat's prediction, is tightened because of the
+observation in pre-registration 9: a speculator now counts as punishing only if, in
+addition to the rule of pre-registration 4, **its own reaction in the pair** to the 11.5 %
+and the 15 % shock is ≥ 0.005 and > 2 SE. V1 and V2 are unchanged.
+
 ---
 
 # Pre-registration 8: price grid per lagged value (audit of the implementation)
@@ -556,4 +563,19 @@ follows in a separate pre-registration once these results exist.
 
 ## Amendments
 
-None yet.
+**12 November 2026, after the runs.** Verdicts as computed by the scripts: P1 *gradual* at
+both σᵤ; P2 *fails* (σᵤ = 0.1: the better-informed speculator at (0.25, 0.75) keeps
+ρ = 0.89 of the coordination at (0.5, 0.5); σᵤ = 100: holds); I1 *partial* (one exact),
+*yes* (both noisy); I2 *mixed* / *mainly noise*; T1 *yes*; T2 *not punishment-based*;
+T3 *punishment survives (spec1)*; T4 *not supported*.
+
+*Exploratory observation, not a rule.* T3 is driven by the control, not by the pair. At
+(0, 1) the better-informed speculator in the pair hardly reacts to the 15 % shock
+(+0.07 %, 2 of 20 runs negative, 4 positive), while the same speculator learning alone
+reacts by −3.9 % (all 20 runs negative). The difference passes the rule, but the pair does
+not trade more aggressively after the shock, which is what punishment means. With the
+coarse grid the lone learners reacted little, so the issue did not arise. The rule of
+pre-registration 4 stays as it is for experiments 4 and 9 and is reported with this
+observation. Looking at the pair's own reaction, the pattern of experiment 4 repeats:
++3.2 % / +3.3 % at (0, 0) (all 20 runs positive), +2.6 % / +0.6 % at (0, 0.25), +0.1 % /
++0.2 % at (0, 1), and ≤ +0.4 % with equal noise.

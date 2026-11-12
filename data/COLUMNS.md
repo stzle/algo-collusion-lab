@@ -20,11 +20,12 @@ to be learning too ("collusive part").
 
 | Column | Meaning |
 |---|---|
-| experiment | Which experiment: `robustness` (pre-registration 1), `precision` (2 and 3), `shock` (4), `final_M` / `final_P` / `final_G` (5), `checks_S` / `checks_H` / `checks_B` (6) |
+| experiment | Which experiment: `robustness` (pre-registration 1), `precision` (2 and 3), `shock` (4), `final_M` / `final_P` / `final_G` (5), `checks_S` / `checks_H` / `checks_B` (6), `audit_L` / `audit_M` / `audit_P` (8), `precision_fine` / `shock_fine` (9: experiments 2–4 with the fine price grid) |
 | sigma_u | Noise-trading volume σᵤ: 0.1 = low (prices informative), 100 = high |
 | noise_spec1, noise_spec2 | Standard deviation of the signal noise of each speculator (0 = sees the value exactly). The asset value has standard deviation 1. |
 | grid_width | Action grid: each speculator chooses aggressiveness between (1 − w) and (1 + w) × its own Nash level |
 | monitoring | What the speculators remember about the last period: `realized` = the true value (variant A), `own_signal` = their own past signal (variant B) |
+| price_grid | `global`: one price grid for all states (coarse monitoring, experiments 1–6); `per_value`: one grid per lagged value (fine monitoring, the paper's footnote 16; experiments 8–9) |
 | period_cap | Maximum learning length in periods; runs that have not converged stop here |
 | value_levels | Number of possible asset values (6 by default; 10 in the finer-grid check and the paper-scale baseline) |
 | learning_setting | `base` (α = 0.01, β = 5 × 10⁻⁷), a changed learning rate or exploration decay such as `alpha=0.005`, or `paper` (grid sizes and convergence rule of Dou, Goldstein & Ji; then grid_width is `paper`) |
