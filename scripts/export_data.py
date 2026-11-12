@@ -51,7 +51,10 @@ def rows_all():
                ("precision", _load("reference_results/precision/points.json")),
                ("shock", _load("reference_results/shock/points.json")),
                ("final", _load("results/final/points.json", "reference_results/final/points.json")),
-               ("checks", _load("results/hygiene/points.json", "reference_results/hygiene/points.json"))]
+               ("checks", _load("results/hygiene/points.json", "reference_results/hygiene/points.json")),
+               ("audit", _load("results/price_grid/points.json", "reference_results/price_grid/points.json")),
+               ("precision_fine", _load("results/precision_fine/points.json", "reference_results/precision_fine/points.json")),
+               ("shock_fine", _load("results/shock_fine/points.json", "reference_results/shock_fine/points.json"))]
     for exp, data in sources:
         if data is None:
             continue
@@ -59,11 +62,14 @@ def rows_all():
         for p in data["points"]:
             q1, q2 = (0.0, p["noise"]) if exp == "robustness" else (p["q1"], p["q2"])
             cell, learners = CELL[p["who"]]
-            paper = exp == "checks" and p["part"] == "B"
-            r = {"experiment": exp if exp not in ("final", "checks") else f"{exp}_{p['part']}",
+            paper = (exp == "checks" and p["part"] == "B") or (exp == "audit" and p["part"] == "P")
+            fine = exp in ("audit", "precision_fine", "shock_fine")
+            monitor = "own_signal" if (exp == "audit" and p["part"] == "M") else p.get("monitor", "realized")
+            r = {"experiment": exp if exp not in ("final", "checks", "audit") else f"{exp}_{p['part']}",
                  "sigma_u": p["sigma_u"], "noise_spec1": q1, "noise_spec2": q2,
-                 "grid_width": "paper" if paper else p.get("width", 0.3), "monitoring": p.get("monitor", "realized"),
-                 "period_cap": 2_000_000_000 if paper else p.get("cap", 200_000_000),
+                 "grid_width": "paper" if paper else p.get("width", 0.3), "monitoring": monitor,
+                 "price_grid": "per_value" if fine else "global",
+                 "period_cap": (10_000_000_000 if exp == "audit" else 2_000_000_000) if paper else p.get("cap", 200_000_000),
                  "value_levels": 10 if paper else p.get("n_v", 6),
                  "learning_setting": p.get("setting", "base"),
                  "who_learns": cell, "runs": p["sessions"], "converged_share": p["converged_share"]}
@@ -94,7 +100,7 @@ def rows_all():
                             r[f"shock{lab}_response_se_spec{i + 1}"] = R[:, k, i].std(ddof=1) / math.sqrt(R.shape[0])
             r["date"] = date
             r = {"id": "|".join(str(r[k]) for k in ("experiment", "sigma_u", "noise_spec1", "noise_spec2",
-                                                     "grid_width", "monitoring", "period_cap", "value_levels",
+                                                     "grid_width", "monitoring", "price_grid", "period_cap", "value_levels",
                                                      "learning_setting", "who_learns")), **r}
             out.append(r)
     return out
@@ -102,7 +108,7 @@ def rows_all():
 
 def _key(r):
     return (r["experiment"], r["sigma_u"], r["noise_spec1"], r["noise_spec2"], r["grid_width"],
-            r["monitoring"], r["period_cap"], r["value_levels"], r["learning_setting"])
+            r["monitoring"], r["price_grid"], r["period_cap"], r["value_levels"], r["learning_setting"])
 
 
 def _n(x):
@@ -121,7 +127,7 @@ def rows_derived(allr):
     for k, g in groups.items():
         if "pair" not in g or "spec1_alone" not in g:
             continue
-        exp, su, q1, q2, w, mon, cap, n_v, setting = k
+        exp, su, q1, q2, w, mon, pg, cap, n_v, setting = k
         sym = q1 == q2
         if not sym and "spec2_alone" not in g:
             continue
@@ -150,8 +156,8 @@ def rows_derived(allr):
                 ra, ra_se = alone[i]
                 mech = ra - r_mech[i]
             c = ra - rp
-            row = {"id": f"{exp}|{su}|{q1}|{q2}|{w}|{mon}|{cap}|{n_v}|{setting}|{name}", "experiment": exp, "sigma_u": su, "noise_spec1": q1, "noise_spec2": q2, "grid_width": w,
-                   "monitoring": mon, "period_cap": cap, "value_levels": n_v, "learning_setting": setting,
+            row = {"id": f"{exp}|{su}|{q1}|{q2}|{w}|{mon}|{pg}|{cap}|{n_v}|{setting}|{name}", "experiment": exp, "sigma_u": su, "noise_spec1": q1, "noise_spec2": q2, "grid_width": w,
+                   "monitoring": mon, "price_grid": pg, "period_cap": cap, "value_levels": n_v, "learning_setting": setting,
                    "speculator": name,
                    "restraint_pair": rp, "restraint_alone": ra,
                    "collusive_part": c, "collusive_part_se": math.hypot(ra_se, rp_se),
