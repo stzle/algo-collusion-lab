@@ -140,8 +140,12 @@ and plugs the estimates into the first-order condition:
 
   p(y) = [ξ₁ξ₀ + θγ₀ + (ξ₁ + θγ₁) y] / (ξ₁² + θ),  price impact λ̂ = (ξ₁ + θγ₁)/(ξ₁² + θ)
 
-DGJ print the intercept as γ̂₀; the full plug-in above has the same slope and an intercept
-that differs from theirs by O(θ/ξ²) ≈ 4×10⁻⁷. Implementation details (`run_session`):
+DGJ print the intercept as γ̂₀; the full plug-in above has the same slope. Its intercept is
+v̄ + O(θ/ξ²) (in centred data the z-on-p regression is exact, so ξ̂₀ = 0 and only θγ̂₀ enters),
+whereas γ̂₀ read literally is the intercept of the v-on-y regression, which carries the
+estimation noise of the 10,000-period window (about σ̂ᵥ/√10⁴ ≈ 0.01). The two agree only up
+to that noise; which one DGJ use is not stated (corrected 16 November 2026; it said
+"differs by O(θ/ξ²)" before). Implementation details (`run_session`):
 
 - regressions use running sums over a circular buffer, so each period costs O(1);
 - data are centred (p − v̄, v − v̄) to avoid cancellation;
@@ -457,6 +461,35 @@ What it suggests, if it holds with 20 sessions:
   (noisy rewards), and the interaction adds only 2–4% to each speculator, against 10% in the
   symmetric pair. That would mean **unequal precision weakens the collusive component (H1)
   while adding a single-agent under-trading bias for the worse-informed learner**.
+
+### 5.7 Q-loss: the deviator's exact decision problem (`lab/qloss.py`, pre-registration 13)
+
+Calvano et al. (2020) check whether learned play is close to equilibrium by computing each
+agent's best response to the rival's learned strategy ("Q-loss"). Here the same check runs
+in the DGJ market with noisy and shared signals.
+
+- **When it is exact.** Under variant A both speculators condition on the same price bin
+  and the same realised lagged value, so the rival's state is the deviator's state with
+  the rival's own signal. With the rival's greedy table and the market maker's final
+  pricing rule frozen, the deviator faces an exact Markov decision problem on its own state
+  (price bin, last value, own signal): 37 · 6 · 6 = 1,332 states, 13 actions. Variant B
+  is refused.
+- **One period.** Given the own signal, this period's value k and the rival's signal are
+  drawn from P(k, s_j | s_i) ∝ J[k, s_i, s_j] (values iid uniform; J from
+  `joint_signal_matrix`, so shared noise is included). Price p = v̄ + p₀ + λ̂(x_i + x_j + u);
+  expected reward (v_k − v̄ − p₀ − λ̂(x_i + x_j)) x_i. Next state: the price bin of p on
+  the grid of k (normal probabilities over u, end bins take the tails as `_price_bin` does),
+  last value k, own signal drawn afresh.
+- **Outputs, weighted by the learned play's stationary state distribution μ and relative
+  to the learned policy's value:** G = Q-loss of the dynamic best response (policy
+  iteration); Mₛ = one-period gain of the myopic best action; M_d = dynamic gain of playing
+  that myopic action everywhere; deterrence D = Mₛ − M_d. A lone learner (rival fixed at
+  Nash) gives the single-agent part; pair minus lone gives the part that needs a partner.
+- **Validation.** A hand-solved two-state example; against a fixed Nash rival with exact
+  information the best response is Nash χ in every state; model against simulation:
+  the best response is played as a one-hot table through `_greedy_path` with common random
+  numbers for 10⁶ periods, and long-run profits must agree within 4 SE; optionally the same
+  deviation against a market maker that keeps learning (`run_sessions` with α = 0).
 
 ---
 

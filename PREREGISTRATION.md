@@ -545,6 +545,12 @@ before pre-registration 7 is run.
 max(0.02, 2 SE); the largest differences are −1.1 and −1.3 points at (0.5, 0.5)),
 M2 = *holds*.
 
+**16 November 2026, citation note (no rule changes).** In the paper version checked now
+(NBER WP 34054, July 2025) the sentence about n_p ≈ 2 n_x is **footnote 25**, and the second
+quoted clause (a coarser grid "lowers the possibility of algorithmic collusion through
+price-trigger strategies") does not appear in its text. It may come from an earlier
+version of the paper; until that is found, the clause counts as unverified.
+
 ---
 
 # Pre-registration 9: core experiments with the price grid per lagged value
@@ -593,3 +599,312 @@ pre-registration 4 stays as it is for experiments 4 and 9 and is reported with t
 observation. Looking at the pair's own reaction, the pattern of experiment 4 repeats:
 +3.2 % / +3.3 % at (0, 0) (all 20 runs positive), +2.6 % / +0.6 % at (0, 0.25), +0.1 % /
 +0.2 % at (0, 1), and ≤ +0.4 % with equal noise.
+
+---
+
+# Pre-registration 10: is the measure sound? (new sample, corrected errors, cap test)
+
+Written on 14 November 2026, **before** any full run of this experiment (smoke tests with a
+tiny budget only). Design and rules by Claude (AI assistant); the prediction is Renat
+Shyhin's own. Applied by `scripts/16_measure_checks.py`, output `results/measure_checks`.
+
+**Status: confirmation, except the cap test.** The rise of *c* with the shared part w is
+already visible in pre-registration 7 (3.3 → 3.6 → 4.4 → 6.3 → 9.7 %). This run repeats it
+on new seeds with a correct standard error. Only the cap test (C1) has an outcome that the
+existing data do not suggest.
+
+## Why
+
+The ± in pre-registration 7 (`scripts/15_shared_noise.py`, `collusive_part`) treats the two
+speculators of one session as independent. If their restraint moves together, that
+understates the error. The saved files hold only means, so the corrected error needs a new
+sample with per-session data. Pre-registration 6 made the direct measurement (opponent
+fixed at its lone-learner level) the preferred estimate where it exists, so it is tested
+too. At w = 0.75 no pair converged within the cap (0 of 20), so the cap might shape *c*.
+
+## Prediction (Renat Shyhin, 16 November 2026, 21:06 CET)
+
+His prediction; the phrasing and format were tidied by Claude at his request.
+
+> 1. Yes. Coordination c rises with the shared part of the noise w. The more noise the two
+>    speculators share, the more alike their signals are, so the more they coordinate. At
+>    w = 1 the signals are identical, so c is clearly higher than at w = 0.
+>    Size: on seeds 21–40, c at each w is within ±20 % (relative) of its value on seeds 1–20.
+>    I'm wrong if: on seeds 21–40 the slope is not more than 2 SE, or c(w = 1) − c(w = 0) is
+>    not more than 2 SE.
+> 2. Cap-robust. At w = 0.75, raising the cap from 2 × 10⁸ to 8 × 10⁸ will change c only a
+>    little, within 2 SE. An earlier check with smaller caps (2 × 10⁸ vs 4 × 10⁸) moved c by
+>    at most 0.003. The point of this run is to repeat the result qualitatively, and the
+>    result should stay about the same.
+>    I'm wrong if: |c(8 × 10⁸) − c(2 × 10⁸)| is 2 SE or more.
+
+No confidence figure is given: Renat regards this run as qualitative. (The 0.003 comes
+from the 20 October amendment to pre-registration 1: σᵤ = 100, single price grid.)
+
+## Design
+
+As pre-registration 7 at σᵤ = 0.1 (noise 0.5 each, w ∈ {0, 0.25, 0.5, 0.75, 1}, pair and
+lone learner against a fixed Nash opponent for every w, direct measurement at w = 0 and 1;
+equal grid ±30 %, variant A, price grid per lagged value, cap 2 × 10⁸), with **seeds 21–40**
+(new). Every point saves per-session arrays. Cap test: w = 0.75, pair and lone learner, cap
+8 × 10⁸, seeds 21–40.
+
+Per session k: c_k = restraint of the lone learner − mean restraint of the two speculators
+in the pair; c_direct,k = restraint of speculator 1 against the opponent fixed at its
+lone-learner level − its restraint in the pair. Points are paired by seed; the SE of a
+difference is the standard deviation of the per-seed differences / √20.
+
+## Decision rules
+
+- **R1 — slope.** OLS slope of mean *c* on w over the five w. SE from a session-level
+  bootstrap (the 20 seeds resampled with replacement, the same draw for all points,
+  10,000 draws, bootstrap seed 12345). *Rises* if slope > 2 SE, otherwise *no clear rise*.
+- **R2 — difference.** c(w = 1) − c(w = 0) with paired SE. *Higher at w = 1* if > 2 SE,
+  otherwise *not clearly higher*. Applied to *c* and to the direct measure.
+- **C1 — cap.** Δc = c(8 × 10⁸) − c(2 × 10⁸) at w = 0.75, paired SE. *Cap-robust* if
+  |Δc| < 2 SE, otherwise *cap-sensitive*. Converged shares for both caps are reported.
+
+- **R3 — size (Renat's ±20 %).** *Holds* if c on seeds 21–40 lies within ±20 % of its
+  seeds 1–20 value at every w, i.e. inside 2.66–3.99 % (w = 0; old value 3.32 %),
+  2.90–4.35 % (0.25; 3.63 %), 3.55–5.33 % (0.5; 4.44 %), 5.03–7.55 % (0.75; 6.29 %) and
+  7.75–11.63 % (1; 9.69 %); otherwise *fails*, with the w outside their range named. Read
+  from the verdict table of `16_measure_checks.py`.
+
+**Descriptive, no rule:** pair term and lone-learner term separately for every w; the old ±
+next to the corrected SE; seeds 21–40 next to seeds 1–20.
+
+## Amendments
+
+---
+
+# Pre-registration 11: which channel is it? (discount factor)
+
+Written on 14 November 2026, **before** any full run of this experiment. Design and rules
+by Claude; the prediction is Renat Shyhin's own. Applied by `scripts/17_discount_test.py`,
+output `results/discount_test`.
+
+**Status: open.** No existing run varies the discount factor.
+
+## Why
+
+Dou, Goldstein & Ji (NBER WP 34054, July 2025) name two mechanisms (Introduction, p. 4):
+price-trigger strategies with a punishment regime ("artificial intelligence", Definition
+3.2) and a learning bias that over-prunes aggressive strategies, without punishment
+("artificial stupidity", Definition 3.3). Proposition 3.4 (p. 19): with price triggers, a
+lower discount factor ρ lowers collusion capacity; in the bias equilibrium "ρ does not
+affect ΔC". Their simulations (Section 6, Figure 8, p. 41, ρ from 0.05 to 0.95) show Δ
+falling steeply with ρ at σᵤ = 0.1 and staying roughly flat at σᵤ = 100. This project
+found no punishment under shared noise (pre-registration 7, V3), so the question is
+whether its coordination behaves like the bias channel.
+
+**The inference runs one way.** Agents with discount 0 put no weight on the future, so
+they cannot punish. Coordination that survives at discount 0 is strong evidence against a
+punishment channel. Coordination that falls is **not** proof of punishment, because the
+discount also changes learning itself (the initial Q-values scale with 1/(1 − ρ),
+`lab/dgj.py` `setup`, as in DGJ Section 4.2; convergence changes). ρ = 0 lies outside the
+paper's range (0, 1) and is chosen on purpose, as the case where punishment is impossible.
+
+## Prediction (Renat Shyhin, date and time, own words)
+
+> *(to be written by Renat before the run)*
+
+## Design
+
+Price grid per lagged value, equal grid ±30 %, variant A, cap 2 × 10⁸, **seeds 1–20**, pair
+and lone learner, both learning with the same discount. Four profiles: exact information,
+independent noise 0.5 (w = 0) and fully shared noise 0.5 (w = 1) at σᵤ = 0.1; exact
+information at σᵤ = 100 (the bias regime, control). Discounts ρ ∈ {0, 0.5}, compared with
+ρ = 0.95. The ρ = 0.95 points are rerun with the same seeds to get per-session arrays; they
+must reproduce the saved means (pre-registrations 7 and 9) exactly, and any mismatch is
+reported. Sixteen new points and eight reruns.
+
+## Decision rules
+
+For each profile and ρ′ ∈ {0, 0.5}: Δc = c(ρ′) − c(0.95), paired SE (by seed).
+*Unchanged* if |Δc| < max(0.01, 2 SE); *falls* if c(ρ′) < 0.5 · c(0.95); *rises* if
+Δc > max(0.01, 2 SE); otherwise *in between*.
+
+**Gate.** The test counts only if exact information at σᵤ = 0.1, the profile that does
+punish in the shock test (pre-registrations 4 and 9, T1), *falls* at ρ = 0. If it does
+not, the verdict is *test not informative*.
+
+**J1 (main, ρ = 0, shared noise w = 1, σᵤ = 0.1).** If the gate passes: *unchanged* →
+*evidence against a punishment channel*; *falls* → *consistent with punishment, not proof*;
+anything else → *inconclusive*.
+
+**Descriptive, same labels, no further rule:** ρ = 0.5 (with its own gate: exact
+information at σᵤ = 0.1 must fall at ρ = 0.5); w = 0; exact information at σᵤ = 100;
+converged shares and learning length per point.
+
+## Amendments
+
+---
+
+# Pre-registration 12: correlation is not enough (matched experiment)
+
+Written on 14 November 2026, **before** any full run of this experiment. Design and rules
+by Claude; the prediction is Renat Shyhin's own. Applied by `scripts/18_matched_correlation.py`,
+output `results/matched_correlation`; figure by `scripts/plot_correlation.py` (existing
+data, descriptive).
+
+**Status: confirmation.** Existing data already point this way: equal precision with
+half-shared noise (measured correlation 0.859) gives c = 4.4 %, unequal precision (0, 0.5)
+(measured correlation 0.866) gives 2.5 % (mean of 3.7 and 1.2 for the two speculators).
+
+## Why
+
+If coordination depended only on how similar the two signals are, a single number (their
+correlation) would predict *c*. The existing data say that unequal precision sits lower at
+the same correlation, which would mean inequality matters in its own right. This
+experiment compares the two at exactly matched correlation.
+
+## Prediction (Renat Shyhin, date and time, own words)
+
+> *(to be written by Renat before the run)*
+
+## Design
+
+Correlation = correlation of the two **discretised** signals (values on the value grid),
+uniform value prior, computed from `joint_signal_matrix`. Two levels: the correlation of the
+equal profile (0.5, 0.5) at w = 0.5 and at w = 0.75. For each level, q is chosen so that the
+unequal profile (0, q) with independent noise has the same correlation (root search; q and
+the achieved correlation are reported). Computed before any run, from the signal
+distributions alone: w = 0.5 → correlation 0.8585, q = 0.519; w = 0.75 → correlation
+0.9146, q = 0.378. Only the unequal arm is run: pair and both lone
+learners, σᵤ = 0.1, seeds 21–40, settings as pre-registration 10 (6 points). The equal arm
+is taken from pre-registration 10 (same seeds).
+
+c of the unequal arm, per seed: the mean over the two speculators of (restraint learning
+alone − restraint in the pair).
+
+## Decision rule
+
+**A1.** At each level, d = c_equal − c_unequal, paired SE. *Lower* if d > 2 SE.
+*Correlation is not enough* if lower at both levels, *partly* if at one, *not supported* if
+at neither.
+
+**Descriptive, no rule:** the figure of *c* against measured correlation for the three
+families (equal precision, unequal precision, shared noise), existing data, at σᵤ = 0.1
+and σᵤ = 100 (the matched experiment runs only at σᵤ = 0.1).
+
+## Amendments
+
+---
+
+# Pre-registration 13: could a rational deviator gain? (Q-loss)
+
+Written on 16 November 2026, **before** any Q-loss is computed on the saved sessions (only
+smoke data and synthetic tables have been used). Design and rules by Claude; the prediction
+is Renat Shyhin's own. Applied by `scripts/19_qloss.py` to `results/qloss_data`, output
+`results/qloss`.
+
+**Status: mostly confirmation.** The shock tests (pre-registrations 4, 7, 9) already found
+punishment at exact information and none under shared noise; this analysis asks the same
+question with a different instrument. The size of the pair part is not known in advance.
+
+## Why
+
+A jury will ask whether the restraint is collusion at all or just a learning error. Calvano,
+Calzolari, Denicolò & Pastorello (2020, AER) answer this for their market by computing
+each agent's best response to the rival's learned strategy and the profit it forgoes
+("Q-loss"). This analysis carries their method to the DGJ market with noisy and shared
+signals; new here are the setting and the split into a single-agent part (lone learner)
+and a pair part.
+
+## Data and model
+
+Seeds 1–20 of exact information, independent noise (w = 0) and fully shared noise (w = 1)
+at σᵤ = 0.1, pair and lone learner, saved before this pre-registration and checked against
+the saved means (`results/qloss_data/check.json`, all six match). For each session and
+learning speculator, with the rival's learned (or fixed) strategy and the final pricing
+rule frozen, the deviator's problem is solved exactly on its own state (price bin, last
+value, own signal; 1,332 states, 13 actions); this is exact because both speculators share
+the price bin and the last value under variant A (`lab/qloss.py`). All quantities are
+weighted by how often the learned play visits each state and expressed relative to the
+learned policy's value:
+
+- **G** — Q-loss: gain of the dynamic best response.
+- **Mₛ** — one-period gain of the myopic best action (immediate profit only).
+- **M_d** — dynamic gain of playing that myopic action in every state, future included.
+- **Deterrence** D = Mₛ − M_d: the part of the immediate gain that the rival's (and the
+  market's) reaction takes back.
+
+Pair values are the mean of the two speculators per session; pair and lone learner are
+compared by seed (paired SE).
+
+## Validity conditions (checked before any verdict)
+
+1. The solver reproduces Renat's hand-solved two-state example (`tests/test_qloss.py`).
+2. Model and a 10⁶-period simulation of the same policies agree: the simulated gain lies
+   within 4 SE of the model's in at least 95 % of session × speculator cases.
+If either fails, the verdict is *not computed* and the cause is reported.
+
+## Decision rules (per profile: exact, w = 0, w = 1)
+
+- **B1 — pair part of the forgone gain.** P = G(pair) − G(lone), paired SE. *Extra gain in
+  the pair* if P > max(0.01, 2 SE); *no extra gain* if |P| < max(0.01, 2 SE); *less gain in
+  the pair* otherwise.
+- **B2 — deterrence in the pair.** D(pair) − D(lone), paired SE. *Deterrence* if
+  > max(0.005, 2 SE), otherwise *no deterrence*.
+- **Gate.** Exact information is the positive control (punishment found in the shock
+  tests): B2 must give *deterrence* there. If not, B2 at w = 0 and w = 1 is *not
+  informative*.
+- **B3 — main (w = 1).** If the gate passes: *no deterrence* at w = 1 → *the shared-noise
+  coordination is not protected by a reaction to deviations*; *deterrence* → *a reaction
+  protects it, which the shock test missed*.
+
+**Descriptive, no rule:** G − Mₛ (how much the best response gains by steering the rival
+through the shared state); converged sessions only; share of states where the best
+response differs from the learned policy; the old static deviation gain as a cross-check;
+the market maker learning during the deviation (`--robustness`), against the
+10,000-period window.
+
+## Prediction (Renat Shyhin, date and time, own words)
+
+> *(to be written by Renat before the analysis)*
+
+## Amendments
+
+---
+
+# Pre-registration 14: small gap check (why the baseline stays below the paper's)
+
+Written on 16 November 2026, **before** any run of this check. The ranked candidate list was
+written by Claude (`private/reports/2026-11-16 DGJ gap candidates.md`); Renat picks the
+candidate; the rule is the project's existing scale (pre-registrations 6 B and 8 P).
+
+**Status: open.** No run so far has varied the chosen detail at the paper's sizes.
+
+## Why
+
+At the paper's sizes the baseline gives Δ = 0.42 (pre-registration 8, part P) against the
+paper's ≈ 0.75 (p. 30). The paper's stated profit, ≈ 54 per speculator (p. 39), lies above
+part P's 51.5 on the same normalisation, so the gap is in what the agents learn, not in the
+formula for Δ. A line-by-line comparison with the main text found no coding error; the
+candidates are details the text leaves open or allows two ways.
+
+## Candidate (Renat's pick, date and time)
+
+> *(to be filled in by Renat: which candidate, and his prediction in his own words)*
+
+## Design
+
+Part P's settings (paper's sizes: 10 value levels, 15 actions, 31 price bins, action grid
+between the benchmarks, convergence = greedy strategies unchanged for 10⁶ periods, cap 10¹⁰,
+price grid per lagged value), σᵤ = 0.1, exact equal information, pair, **seeds 1–12**,
+changing only the chosen detail. Part P's baseline is rerun with the same seeds to get
+per-session values; it must reproduce the saved mean (Δ = 0.423) exactly, and any mismatch
+is reported. Comparisons are paired by seed.
+
+## Decision rule
+
+**G1.** With ΔG = Δ(candidate) − Δ(part P), paired SE: *reproduced* if Δ(candidate) ≥ 0.65
+and ΔG > 2 SE; *partly* if Δ(candidate) ≥ 0.50 and ΔG > 2 SE; otherwise *not reproduced*.
+Descriptive: ΔG with its SE in every case (*moves Δ* if > 2 SE even when the level stays
+below 0.50), converged share and learning length.
+
+A second candidate is run only if the first finishes within the same night and time is left
+before the freeze; it gets the same rule. If the authors reply first with the cause, their
+answer replaces the list.
+
+## Amendments

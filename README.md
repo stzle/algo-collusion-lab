@@ -72,7 +72,7 @@ python scripts/00_check_setup.py
 pytest -q
 ```
 
-`pytest` should report 77 passed.
+`pytest` should report 117 passed and 1 skipped (the skipped test waits for Renat's hand-solved Q-loss example).
 
 `00_check_setup.py` warns if Python runs as x86_64 (about 2× slower), compiles the
 code once (cached afterwards, so later runs start immediately), prints your
@@ -104,6 +104,13 @@ learning path on Apple Silicon and on the x86 test machine (checked on an M4:
 | `13_price_grid_audit.py` | Audit: price grid per lagged value (the paper's footnote 16) at the paper's sizes and at laptop sizes; rules in `PREREGISTRATION.md` (part 8) | 26 runs (~1.5 h; part M alone ~15 min) |
 | `14_fine_grid_core.py` | Precision sweep, noise versus inequality and shock test repeated with the price grid per lagged value; same rules (`PREREGISTRATION.md` part 9) | 96 runs (~2 h) |
 | `15_shared_noise.py` | Shared versus private noise at equal precision 0.5: Renat's prediction (`PREREGISTRATION.md` part 7) | 24 runs (~45 min) |
+| `16_measure_checks.py` | Is the measure sound? Shared-noise curve on new seeds with session-level errors, direct measure, period cap ×4 (`PREREGISTRATION.md` part 10) | 14 runs (~35 min) |
+| `17_discount_test.py` | Which channel? Discount 0 and 0.5 against 0.95; punishment needs a future (`PREREGISTRATION.md` part 11) | 24 runs (~30–50 min) |
+| `18_matched_correlation.py` | Equal against unequal precision at matched signal correlation; run after 16 (`PREREGISTRATION.md` part 12) | 6 runs (~7 min) |
+| `save_qloss_data.py` | Repeats six existing points and saves their Q-tables for the Q-loss analysis; checks them against the saved means | 6 runs (~8 min) |
+| `19_qloss.py` | Q-loss: exact best response to the learned rival, against the myopic gain (`PREREGISTRATION.md` part 13); needs `--preregistered` for the saved sessions | no simulation runs (~minutes) |
+| `20_gap_check.py` | Small gap check at the paper's sizes: part P's baseline again plus one pre-registered candidate (`PREREGISTRATION.md` part 14) | 2 runs × 12 sessions (~30 min–1.5 h) |
+| `plot_correlation.py` | Figure: collusive part against measured signal correlation, existing data | — |
 | `playground.py` | One setting (pair and lone learner) in one to two minutes, for practice and live demos; not part of any pre-registered experiment | 4 runs |
 
 A small version of everything, to check that it all works:
@@ -171,8 +178,10 @@ lab/calvano.py          Calvano model, Nash/monopoly benchmarks, Q-learning, dev
 lab/dgj_benchmarks.py   Nash and cartel benchmarks for any signal-precision profile
 lab/dgj.py              DGJ market: adaptive market maker, Q-learning speculators,
                         evaluation, impulse responses, fixed-strategy validation
-scripts/00 … 06         run scripts (see table above)
-tests/                  38 checks: published values, closed forms, Kyle limit,
-                        environment vs theory, reproducibility
+lab/qloss.py            Q-loss: the deviator's exact decision problem, best response,
+                        simulation check
+scripts/00 … 19         run scripts (see table above)
+tests/                  117 checks: published values, closed forms, Kyle limit,
+                        environment vs theory, reproducibility, decision rules
 TECHNICAL.md            equations ↔ code, derivations, scaling decisions, open problems
 ```

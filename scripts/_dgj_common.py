@@ -1,6 +1,8 @@
 """Shared runner for the DGJ scripts: one parameter point -> summary dict."""
 from __future__ import annotations
 
+import json
+
 import numpy as np
 
 import _common as C
@@ -35,6 +37,27 @@ def make_params(**kw) -> dgj.DGJParams:
     return dgj.DGJParams(**p)
 
 
+def session_arrays(res: dict) -> dict:
+    """Per-session outcomes (sessions x speculators where it applies), so new scripts can
+    compute session-level errors and paired differences instead of only means."""
+    bm = res["env"]["bm"]
+    # per-session restraint relative to the static best response (TECHNICAL.md 5.5)
+    rr = [bmk.restraint(res["chi"][k], bm["C"], bm["S"], bm["nash"]["lam"]) for k in range(len(res["chi"]))]
+    return {"restraint": np.array([r["restraint"] for r in rr]),
+            "deviation_gain": np.array([r["deviation_gain"] for r in rr]),
+            "delta": res["delta"], "converged": res["converged"], "t_learn": res["t_learn"],
+            "chi": res["chi"], "profit": res["profit"]}
+
+
+def save_sessions(path, prm: dgj.DGJParams, seeds, res: dict) -> None:
+    """Everything needed to analyse the learned strategies later without rerunning:
+    Q-tables, final pricing rule and chain state, plus the per-session outcomes."""
+    ps = session_arrays(res)
+    np.savez_compressed(path, seeds=np.asarray(seeds), Q=res["Q"], mm=res["mm"], s_final=res["s_final"],
+                        v_final=res["v_final"], sig_final=res["sig_final"],
+                        params=json.dumps(prm.to_dict()), **{f"ps_{k}": v for k, v in ps.items()})
+
+
 def run_point(prm: dgj.DGJParams, seeds) -> tuple[dict, dict]:
     env = dgj.setup(prm)
     with C.Timer() as tm:
@@ -42,10 +65,8 @@ def run_point(prm: dgj.DGJParams, seeds) -> tuple[dict, dict]:
     bm = env["bm"]
     conv = res["converged"]
     chiN = bm["nash"]["chi"]
-    # per-session restraint relative to the static best response (TECHNICAL.md 5.5)
-    rr = [bmk.restraint(res["chi"][k], bm["C"], bm["S"], bm["nash"]["lam"]) for k in range(len(seeds))]
-    restr = np.array([r["restraint"] for r in rr])
-    devg = np.array([r["deviation_gain"] for r in rr])
+    ps = session_arrays(res)
+    restr, devg = ps["restraint"], ps["deviation_gain"]
     n = len(seeds)
     busy = min(_threads(), n)                       # cores actually used
     periods = float(np.sum(res["t_learn"]) + n * prm.eval_periods)
