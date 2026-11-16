@@ -140,8 +140,12 @@ and plugs the estimates into the first-order condition:
 
   p(y) = [ξ₁ξ₀ + θγ₀ + (ξ₁ + θγ₁) y] / (ξ₁² + θ),  price impact λ̂ = (ξ₁ + θγ₁)/(ξ₁² + θ)
 
-DGJ print the intercept as γ̂₀; the full plug-in above has the same slope and an intercept
-that differs from theirs by O(θ/ξ²) ≈ 4×10⁻⁷. Implementation details (`run_session`):
+DGJ print the intercept as γ̂₀; the full plug-in above has the same slope. Its intercept is
+v̄ + O(θ/ξ²) (in centred data the z-on-p regression is exact, so ξ̂₀ = 0 and only θγ̂₀ enters),
+whereas γ̂₀ read literally is the intercept of the v-on-y regression, which carries the
+estimation noise of the 10,000-period window (about σ̂ᵥ/√10⁴ ≈ 0.01). The two agree only up
+to that noise; which one DGJ use is not stated (corrected 16 November 2026; it said
+"differs by O(θ/ξ²)" before). Implementation details (`run_session`):
 
 - regressions use running sums over a circular buffer, so each period costs O(1);
 - data are centred (p − v̄, v − v̄) to avoid cancellation;
