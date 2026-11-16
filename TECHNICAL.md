@@ -458,6 +458,35 @@ What it suggests, if it holds with 20 sessions:
   symmetric pair. That would mean **unequal precision weakens the collusive component (H1)
   while adding a single-agent under-trading bias for the worse-informed learner**.
 
+### 5.7 Q-loss: the deviator's exact decision problem (`lab/qloss.py`, pre-registration 13)
+
+Calvano et al. (2020) check whether learned play is close to equilibrium by computing each
+agent's best response to the rival's learned strategy ("Q-loss"). Here the same check runs
+in the DGJ market with noisy and shared signals.
+
+- **When it is exact.** Under variant A both speculators condition on the same price bin
+  and the same realised lagged value, so the rival's state is the deviator's state with
+  the rival's own signal. With the rival's greedy table and the market maker's final
+  pricing rule frozen, the deviator faces an exact Markov decision problem on its own state
+  (price bin, last value, own signal): 37 · 6 · 6 = 1,332 states, 13 actions. Variant B
+  is refused.
+- **One period.** Given the own signal, this period's value k and the rival's signal are
+  drawn from P(k, s_j | s_i) ∝ J[k, s_i, s_j] (values iid uniform; J from
+  `joint_signal_matrix`, so shared noise is included). Price p = v̄ + p₀ + λ̂(x_i + x_j + u);
+  expected reward (v_k − v̄ − p₀ − λ̂(x_i + x_j)) x_i. Next state: the price bin of p on
+  the grid of k (normal probabilities over u, end bins take the tails as `_price_bin` does),
+  last value k, own signal drawn afresh.
+- **Outputs, weighted by the learned play's stationary state distribution μ and relative
+  to the learned policy's value:** G = Q-loss of the dynamic best response (policy
+  iteration); Mₛ = one-period gain of the myopic best action; M_d = dynamic gain of playing
+  that myopic action everywhere; deterrence D = Mₛ − M_d. A lone learner (rival fixed at
+  Nash) gives the single-agent part; pair minus lone gives the part that needs a partner.
+- **Validation.** A hand-solved two-state example; against a fixed Nash rival with exact
+  information the best response is Nash χ in every state; model against simulation:
+  the best response is played as a one-hot table through `_greedy_path` with common random
+  numbers for 10⁶ periods, and long-run profits must agree within 4 SE; optionally the same
+  deviation against a market maker that keeps learning (`run_sessions` with α = 0).
+
 ---
 
 ## 6. What is scaled down and why
