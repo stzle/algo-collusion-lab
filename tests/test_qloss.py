@@ -67,14 +67,31 @@ def test_stationary_refuses_two_recurrent_classes():
         QL.stationary(np.eye(2))
 
 
-@pytest.mark.skip(reason="placeholder: Renat's hand-solved 2-state, 2-action example goes here")
+# Renat's hand example (vault: "Algo Collusion Lab B hand example"). States 0 = Low, 1 = High;
+# actions 0 = hold back, 1 = trade hard. His hand-solved numbers go in below; until then skipped.
+HAND = dict(R=np.array([[0.0, 2.0], [5.0, 6.0]]), p_high=(0.8, 0.2), rho=0.5, learned=[0, 0])
+BY_HAND = None   # fill in: dict(V_learned=[..], V_star=[..], policy_star=[..], mu=[..],
+                 #               q_loss=.., myopic_static=.., myopic_dynamic=..)
+
+
+@pytest.mark.skipif(BY_HAND is None, reason="waiting for Renat's hand-solved numbers")
 def test_renats_hand_example():
-    P = np.zeros((2, 2, 2))          # fill in: P[s, a] = next-state probabilities
-    R = np.zeros((2, 2))             # fill in: R[s, a]
-    rho = 0.9                        # fill in
-    V_star_by_hand, policy_by_hand = None, None
-    V, pol, _ = QL.best_response(P, R, rho)
-    assert list(pol) == policy_by_hand and np.allclose(V, V_star_by_hand)
+    R, rho, pol = HAND["R"], HAND["rho"], HAND["learned"]
+    P = np.zeros((2, 2, 2))
+    for a, ph in enumerate(HAND["p_high"]):
+        P[:, a] = [1 - ph, ph]
+    V = QL.policy_value(P, R, pol, rho)
+    V_star, pol_star, _ = QL.best_response(P, R, rho)
+    mu = QL.stationary(QL._pi(P, pol))
+    V_my = QL.policy_value(P, R, R.argmax(axis=1), rho)
+    r_pi = R[np.arange(2), pol]
+    assert np.allclose(V, BY_HAND["V_learned"], atol=1e-3)
+    assert np.allclose(V_star, BY_HAND["V_star"], atol=1e-3)
+    assert list(pol_star) == BY_HAND["policy_star"]
+    assert np.allclose(mu, BY_HAND["mu"], atol=1e-3)
+    assert mu @ (V_star - V) / (mu @ V) == pytest.approx(BY_HAND["q_loss"], abs=1e-3)
+    assert mu @ (R.max(axis=1) - r_pi) / (mu @ r_pi) == pytest.approx(BY_HAND["myopic_static"], abs=1e-3)
+    assert mu @ (V_my - V) / (mu @ V) == pytest.approx(BY_HAND["myopic_dynamic"], abs=1e-3)
 
 
 # ------------------------------------------------------------------ the deviator's MDP
@@ -134,18 +151,65 @@ def test_own_signal_monitoring_is_refused():
 
 # ------------------------------------------------------------------ script
 
-def test_parts_and_verdict_stub():
-    def rec(learners, q):
-        return {"spec": {f"spec{i + 1}": {"per_session": {"q_loss": q[i]},
-                                          "summary": {k: {"mean": 0.0, "se": 0.0} for k in
-                                                      ("q_loss", "myopic_gain_static", "myopic_gain_dynamic",
-                                                       "static_deviation_gain")}}
-                         for i in learners}}
-    pts = {"exact_pair": rec([0, 1], {0: [0.10, 0.12], 1: [0.14, 0.12]}),
-           "exact_only0": rec([0], {0: [0.02, 0.04]})}
+def _rec(learners, q, ms=None, md=None, seeds=(1, 2, 3), sim_ok=True):
+    n = len(seeds)
+    zero = [0.0] * n
+    spec = {}
+    for i in learners:
+        spec[f"spec{i + 1}"] = {
+            "per_session": {"q_loss": q[i], "myopic_gain_static": (ms or {}).get(i, zero),
+                            "myopic_gain_dynamic": (md or {}).get(i, zero)},
+            "summary": {k: {"mean": 0.0, "se": 0.0} for k in
+                        ("q_loss", "myopic_gain_static", "myopic_gain_dynamic", "static_deviation_gain")},
+            "sim_check": [{"diff": {"model": 1.0, "sim": 1.0 if sim_ok else 2.0, "sim_se": 0.1}}]}
+    return {"seeds": list(seeds), "spec": spec}
+
+
+def test_parts():
+    pts = {"exact_pair": _rec([0, 1], {0: [0.10, 0.12], 1: [0.14, 0.12]}, seeds=(1, 2)),
+           "exact_only0": _rec([0], {0: [0.02, 0.04]}, seeds=(1, 2))}
     p = SC.parts(pts)["exact"]
     assert p["pair"]["mean"] == pytest.approx(0.12) and p["lone"]["mean"] == pytest.approx(0.03)
     assert p["pair_part"]["mean"] == pytest.approx(0.09)
-    v = SC.verdicts(pts)
-    assert "not yet" in v["rules"] and set(v["points"]) == set(pts)
+
+
+def test_rules_b1_b2():
+    assert SC.b1({"mean": 0.05, "se": 0.01}) == "extra gain in the pair"
+    assert SC.b1({"mean": 0.005, "se": 0.001}) == "no extra gain"
+    assert SC.b1({"mean": -0.05, "se": 0.01}) == "less gain in the pair"
+    assert SC.b1({"mean": 0.03, "se": 0.02}) == "no extra gain"          # 2 SE dominates
+    assert SC.b2({"mean": 0.02, "se": 0.005}) == "deterrence"
+    assert SC.b2({"mean": 0.004, "se": 0.0001}) == "no deterrence"       # below 0.5 pp
+
+
+def _points(det_exact, det_w1, sim_ok=True):
+    """Pair deterrence (static - dynamic myopic gain) per profile; lone learner none."""
+    pts = {}
+    for prof, det in (("exact", det_exact), ("w0", [0.0, 0.0, 0.0]), ("w1", det_w1)):
+        ms = {0: [0.10] * 3, 1: [0.10] * 3}
+        md = {i: [0.10 - d for d in det] for i in (0, 1)}
+        pts[f"{prof}_pair"] = _rec([0, 1], {0: [0.05] * 3, 1: [0.05] * 3}, ms, md, sim_ok=sim_ok)
+        pts[f"{prof}_only0"] = _rec([0], {0: [0.01, 0.02, 0.03]}, {0: [0.1] * 3}, {0: [0.1] * 3}, sim_ok=sim_ok)
+    return pts
+
+
+def test_gate_and_b3(monkeypatch):
+    monkeypatch.setattr(SC, "hand_validity", lambda: {"passes": True, "note": "ok"})
+    v = SC.verdicts(_points([0.05, 0.06, 0.07], [0.0, 0.001, -0.001]))
+    assert v["gate"] == "passes" and v["B2"]["exact"]["verdict"] == "deterrence"
+    assert v["B3"].startswith("the shared-noise coordination is not protected")
+    assert v["B1"]["w1"]["verdict"] == "extra gain in the pair"
+    v = SC.verdicts(_points([0.05, 0.06, 0.07], [0.05, 0.06, 0.07]))
+    assert v["B3"].startswith("a reaction protects it")
+    v = SC.verdicts(_points([0.0, 0.001, -0.001], [0.05, 0.06, 0.07]))
+    assert v["gate"] == "fails" and v["B2"]["w1"]["verdict"] == "not informative" and v["B3"] == "not run"
     assert "Q-loss" in SC.report_md(v)
+
+
+def test_validity_blocks_verdicts(monkeypatch):
+    monkeypatch.setattr(SC, "hand_validity", lambda: {"passes": True, "note": "ok"})
+    v = SC.verdicts(_points([0.05, 0.06, 0.07], [0.0, 0.0, 0.0], sim_ok=False))
+    assert not v["validity"]["simulation"]["passes"] and v["B3"].startswith("not computed")
+    monkeypatch.setattr(SC, "hand_validity", lambda: {"passes": False, "note": "not solved"})
+    v = SC.verdicts(_points([0.05, 0.06, 0.07], [0.0, 0.0, 0.0]))
+    assert v["B1"]["exact"]["verdict"] == "not computed"

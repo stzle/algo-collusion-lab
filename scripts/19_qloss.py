@@ -11,7 +11,7 @@ lone learner (rival fixed at Nash) gives the single-agent part. Each session als
 simulation check of the model (model vs simulated long-run average profit, common random
 numbers), and optionally the same deviation against a market maker that keeps learning.
 
-    python scripts/19_qloss.py                                    # all saved sessions
+    python scripts/19_qloss.py --preregistered                    # all saved sessions
     python scripts/19_qloss.py --max-sessions 2 --robustness      # quick test
     python scripts/19_qloss.py --analyze-only                     # verdicts from points.json
 
@@ -110,15 +110,90 @@ def parts(points: dict) -> dict:
 
 
 # ------------------------------------------------------------------ verdicts
+# Pre-registration 13
+MIN_P, MIN_D = 0.01, 0.005          # smallest pair part (B1) and deterrence (B2) worth naming
+SIM_SE, SIM_SHARE = 4.0, 0.95       # validity: simulated gain within 4 SE in >= 95 % of cases
+PROFILES = ["exact", "w0", "w1"]
+
+
+def _per_session(rec, key) -> np.ndarray:
+    """Per-session value, averaged over the learners of that session."""
+    return np.mean([np.asarray(rec["spec"][s]["per_session"][key], dtype=float) for s in rec["spec"]], axis=0)
+
+
+def _deterrence(rec) -> np.ndarray:
+    return _per_session(rec, "myopic_gain_static") - _per_session(rec, "myopic_gain_dynamic")
+
+
+def paired(a, b, seeds_a, seeds_b) -> dict:
+    if list(seeds_a) != list(seeds_b):
+        raise ValueError("paired comparison needs the same seeds")
+    d = np.asarray(a, dtype=float) - np.asarray(b, dtype=float)
+    return {"mean": float(d.mean()), "se": float(d.std(ddof=1) / math.sqrt(len(d)))}
+
+
+def b1(x) -> str:
+    lim = max(MIN_P, 2 * x["se"])
+    return "extra gain in the pair" if x["mean"] > lim else "no extra gain" if abs(x["mean"]) < lim \
+        else "less gain in the pair"
+
+
+def b2(x) -> str:
+    return "deterrence" if x["mean"] > max(MIN_D, 2 * x["se"]) else "no deterrence"
+
+
+def sim_validity(points) -> dict:
+    cases = [c["diff"] for rec in points.values() for d in rec["spec"].values() for c in d.get("sim_check", [])]
+    ok = [abs(c["sim"] - c["model"]) <= SIM_SE * c["sim_se"] for c in cases]
+    share = float(np.mean(ok)) if ok else float("nan")
+    return {"cases": len(ok), "within": int(sum(ok)), "share": share, "passes": bool(ok) and share >= SIM_SHARE}
+
+
+def hand_validity() -> dict:
+    """Validity condition 1: Renat's hand-solved example (tests/test_qloss.py)."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("tq", C.ROOT / "tests" / "test_qloss.py")
+    tq = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(tq)
+    if tq.BY_HAND is None:
+        return {"passes": False, "note": "hand example not solved yet"}
+    try:
+        tq.test_renats_hand_example()
+    except AssertionError as e:
+        return {"passes": False, "note": f"solver differs from the hand solution: {e}"}
+    return {"passes": True, "note": "solver matches the hand solution"}
+
 
 def verdicts(points) -> dict:
-    """STUB: descriptive numbers only. The decision rules come from pre-registration 13 and
-    are added once it is committed."""
-    v = {"rules": "not yet added (pre-registration 13)", "parts": parts(points), "points": {}}
+    v = {"rules": "pre-registration 13", "parts": parts(points), "points": {},
+         "validity": {"hand": hand_validity(), "simulation": sim_validity(points)},
+         "B1": {}, "B2": {}, "gate": "not run", "B3": "not run"}
     for name, rec in points.items():
         v["points"][name] = {s: {k: d["summary"][k] for k in ("q_loss", "myopic_gain_static",
                                                               "myopic_gain_dynamic", "static_deviation_gain")}
                              for s, d in rec["spec"].items()}
+    valid = v["validity"]["hand"]["passes"] and v["validity"]["simulation"]["passes"]
+    for prof in PROFILES:
+        pr, al = points.get(f"{prof}_pair"), points.get(f"{prof}_only0")
+        if pr is None or al is None:
+            continue
+        P = paired(_per_session(pr, "q_loss"), _per_session(al, "q_loss"), pr["seeds"], al["seeds"])
+        D = paired(_deterrence(pr), _deterrence(al), pr["seeds"], al["seeds"])
+        v["B1"][prof] = {**P, "verdict": b1(P) if valid else "not computed"}
+        v["B2"][prof] = {**D, "verdict": b2(D) if valid else "not computed"}
+    if not valid:
+        v["gate"] = v["B3"] = "not computed (validity condition failed)"
+        return v
+    if "exact" in v["B2"]:
+        v["gate"] = "passes" if v["B2"]["exact"]["verdict"] == "deterrence" else "fails"
+        if v["gate"] == "fails":
+            for prof in ("w0", "w1"):
+                if prof in v["B2"]:
+                    v["B2"][prof]["verdict"] = "not informative"
+    if v["gate"] == "passes" and "w1" in v["B2"]:
+        v["B3"] = ("the shared-noise coordination is not protected by a reaction to deviations"
+                   if v["B2"]["w1"]["verdict"] == "no deterrence"
+                   else "a reaction protects it, which the shock test missed")
     return v
 
 
@@ -128,6 +203,14 @@ def report_md(v) -> str:
          "learned play's visits; ± = session-level s.e.", "",
          "| point | speculator | Q-loss | ± | myopic, one period | myopic, dynamic | static deviation gain |",
          "|---|---|---:|---:|---:|---:|---:|"]
+    if "validity" in v:
+        h, sm = v["validity"]["hand"], v["validity"]["simulation"]
+        L[2:2] = [f"- **Validity:** hand example: {h['note']}; simulation: {sm['within']} of {sm['cases']} "
+                  f"cases within {SIM_SE:g} SE ({'passes' if sm['passes'] else 'fails'})",
+                  f"- **Gate (deterrence at exact information):** {v['gate']}",
+                  f"- **B3 (w = 1):** {v['B3']}"] + \
+                 [f"- **{r} {prof}:** {x['verdict']} ({100 * x['mean']:+.2f} ± {100 * x['se']:.2f} pp)"
+                  for r in ("B1", "B2") for prof, x in v[r].items()] + [""]
     for name, d in v["points"].items():
         for s, x in d.items():
             L.append(f"| {name} | {s} | {100 * x['q_loss']['mean']:.2f} | {100 * x['q_loss']['se']:.2f} | "
@@ -151,8 +234,13 @@ def main():
     ap.add_argument("--robustness", action="store_true", help="also the learning market maker check")
     ap.add_argument("--threads", type=int, default=None)
     ap.add_argument("--analyze-only", action="store_true")
+    ap.add_argument("--preregistered", action="store_true",
+                    help="confirm that pre-registration 13 is committed (needed for the real data)")
     args = ap.parse_args()
 
+    if Path(args.data_dir).resolve() == (C.RESULTS / "qloss_data").resolve() and not args.preregistered:
+        raise SystemExit("The saved sessions may only be analysed after pre-registration 13 is committed "
+                         "with Renat's prediction; then rerun with --preregistered.")
     out = C.out_dir(args.out)
     path = out / "points.json"
     if args.analyze_only:
